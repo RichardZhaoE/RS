@@ -1,0 +1,1937 @@
+//*******************************************************//
+//Law Balloon
+//Author: Richard
+//Redistributing and releasing different versions is not allowed unless granted permission by Richard
+// *******************************************************//
+
+import java.util.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.image.RenderedImage;
+import java.text.NumberFormat;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.io.*;
+import javax.imageio.ImageIO;
+
+import java.lang.Object;
+import javax.swing.*;
+import org.rsbot.util.GlobalConfiguration;
+
+import org.rsbot.script.*;
+import org.rsbot.script.methods.*;
+import org.rsbot.script.wrappers.*;
+import org.rsbot.event.listeners.*;
+import org.rsbot.event.events.*;
+import org.rsbot.event.*;
+import org.rsbot.bot.Bot;
+import org.rsbot.script.methods.Skills;
+import org.rsbot.script.wrappers.RSInterface;
+
+@ScriptManifest(authors = {"Richard"}, keywords = "Runecrafting", name = "Law Balloon", version = 1.27, description = ("Law Crafter via Balloon"))
+              
+public class LawBalloonPro extends Script implements PaintListener, MessageListener,  MouseListener, MouseMotionListener {
+
+    	LawBalloonGUI gui;
+	public boolean isGUIOpen = true, exitGUI;
+	ChatResponder chatRespond;
+	antiBan AntiBan;
+
+	//Areas
+	RSArea entrana = new RSArea(new RSTile(2805, 3352), new RSTile(2812, 3359));
+	RSTile bankAreaC = new RSTile(2442,3089);
+	RSTile bankArea = new RSTile(2444,3083); 
+	RSTile altarArea;
+	
+	//Messages
+	public String startMessage1 = "Hello. Thank you for choosing Law Balloon";
+	public String startMessage2 = "Initializing script...";
+
+
+	//Objects
+	int bankerID;
+	int assistantID = 5063;
+	int balloonID = 19137;
+	int balloonID2 = 19133;
+	int entranceID;
+	int altarID;
+	int logID = 1511;
+	RSTile altarTile = null;
+	int doorID = 36315;
+	int doorID2 = 36317;
+
+	//Items
+	int runeID;
+	int airID = 556;
+	int cosmicID = 564;
+	int astralID = 9075;
+	private final int pureEssenceID = 7936;
+	private final int smallID = 5509; // small
+	private final int medID = 5510; // med
+	private final int largeID = 5512; // large
+	private final int giantID = 5514; // giant
+	private final int giantBrokenID = 5515;
+	private final int largeBrokenID = 5513;
+	private final int medBrokenID = 5511;	
+	private boolean fullPouches[] = {false, false, false, false, false};
+	private final int newRingID = 2552;
+	private final int oldRingID = 2566;
+	private final int RingOfKinshipIDs = 15707;
+
+	//Prices
+	private int essencePrice;
+	private int runePrice;
+
+
+	//Varibles
+	String retrievedAuthCode;
+	String authCode;
+	String ipAddress;	
+			//Energy
+		private int turnOnRunAt = random(50,80);
+			//EXP
+		private int lastEXP = 0;
+		private long lastRecievedEXP = 0;
+			//Remote Logout
+		public boolean isUsingRemote = false;
+		public boolean logToLoginScreen = true;
+		public boolean doLogout = false;
+		public String previousMessage = null;
+			//AntiBan
+		long preformedAntiban = System.currentTimeMillis();
+			//Status	
+		public String status = null;
+			//Animations
+			//Script
+			int numOfPouches;
+			boolean newRing;
+			boolean ringChecked = false;
+			boolean equipped = false;
+			boolean isRepairingPouches;
+			int timesCrafted;
+			int runesCrafted;
+			int essenceUsed;
+			int timesRun = 0;
+			long expGained = 0;
+			int pouchesRepaired = 0;
+			String tag1;
+			String tag2;
+
+	//GUI
+	public String remoteLogout;
+	public String logoutType;
+	private boolean guiStart = false;
+	private String remoteName = "", logoutMessage = "";
+	public String runeType;
+	public String repairingPouches;
+
+
+
+	//Paint
+	public long startTime = 0;
+	public Image GUIpicture;
+	public String Title1 = "Law Balloon";
+	public String Title2 = "           Version v" +getVersion();
+
+	private int sine = 0;
+
+	private int sineM = 1;
+	public int xpPerHour = 0;
+	public int totalXP = 0;
+	public int levelsGained = 0;
+	public int startXP = 0;
+	public int XPToLevel = 0;
+	public int startLevel = 0;
+	public int percentTillLevel = 0;
+	public int currentLVL = 0;
+	public int currentXP = 0;
+	public int profit = 0;
+	private int numberOfInvenItems;
+	boolean showPaint = true;
+	public int showPaintID = 1;
+	public boolean clickPaint = true;
+	RSTile[] walkingPath = null; 
+	RSTile objectTile = null;
+
+	private final RSTile[] toBalloon = { new RSTile(2444, 3083),  new RSTile(2444, 3084),  new RSTile(2444, 3085),  new RSTile(2444, 3086),  new RSTile(2444, 3087),  new RSTile(2444, 3088),  new RSTile(2444, 3089),  new RSTile(2445, 3089),  new RSTile(2446, 3089),  new RSTile(2447, 3089),  new RSTile(2448, 3089),  new RSTile(2449, 3089),  new RSTile(2450, 3089),  new RSTile(2451, 3089),  new RSTile(2452, 3089),  new RSTile(2453, 3089),  new RSTile(2454, 3089),  new RSTile(2455, 3089),  new RSTile(2456, 3090),  new RSTile(2457, 3091),  new RSTile(2458, 3092),  new RSTile(2459, 3093),  new RSTile(2459, 3094),  new RSTile(2459, 3095),  new RSTile(2459, 3096),  new RSTile(2459, 3097),  new RSTile(2459, 3098),  new RSTile(2459, 3099),  new RSTile(2459, 3100),  new RSTile(2459, 3101),  new RSTile(2459, 3102),  new RSTile(2459, 3103),  new RSTile(2459, 3104),  new RSTile(2459, 3105),  new RSTile(2459, 3106),  new RSTile(2460, 3107),  new RSTile(2461, 3107),  new RSTile(2461, 3108) };
+
+	private final RSTile[] toRuins = { new RSTile(2808, 3354),  new RSTile(2809, 3353),  new RSTile(2810, 3352),  new RSTile(2811, 3351),  new RSTile(2812, 3350),  new RSTile(2813, 3349),  new RSTile(2814, 3348),  new RSTile(2815, 3347),  new RSTile(2816, 3346),  new RSTile(2817, 3346),  new RSTile(2818, 3346),  new RSTile(2819, 3346),  new RSTile(2820, 3346),  new RSTile(2821, 3346),  new RSTile(2822, 3345),  new RSTile(2823, 3344),  new RSTile(2824, 3344),  new RSTile(2825, 3344),  new RSTile(2826, 3344),  new RSTile(2827, 3344),  new RSTile(2828, 3344),  new RSTile(2829, 3344),  new RSTile(2830, 3344),  new RSTile(2831, 3344),  new RSTile(2832, 3344),  new RSTile(2833, 3344),  new RSTile(2834, 3344),  new RSTile(2835, 3344),  new RSTile(2836, 3344),  new RSTile(2837, 3344),  new RSTile(2837, 3345),  new RSTile(2837, 3346),  new RSTile(2838, 3347),  new RSTile(2838, 3348),  new RSTile(2839, 3348),  new RSTile(2840, 3348),  new RSTile(2841, 3348),  new RSTile(2842, 3348),  new RSTile(2843, 3348),  new RSTile(2844, 3348),  new RSTile(2845, 3348),  new RSTile(2846, 3348),  new RSTile(2847, 3348),  new RSTile(2848, 3348),  new RSTile(2849, 3348),  new RSTile(2850, 3348),  new RSTile(2851, 3349),  new RSTile(2852, 3350),  new RSTile(2853, 3350),  new RSTile(2854, 3350),  new RSTile(2855, 3349),  new RSTile(2856, 3349),  new RSTile(2857, 3349),  new RSTile(2858, 3349),  new RSTile(2859, 3349),  new RSTile(2859, 3350),  new RSTile(2859, 3351),  new RSTile(2859, 3352),  new RSTile(2859, 3353),  new RSTile(2859, 3354),  new RSTile(2859, 3355),  new RSTile(2859, 3356),  new RSTile(2858, 3356),  new RSTile(2858, 3357),  new RSTile(2857, 3358),  new RSTile(2857, 3359),  new RSTile(2857, 3360),  new RSTile(2857, 3361),  new RSTile(2857, 3362),  new RSTile(2857, 3363),  new RSTile(2857, 3364),  new RSTile(2857, 3365),  new RSTile(2857, 3366),  new RSTile(2857, 3367),  new RSTile(2857, 3368),  new RSTile(2857, 3369),  new RSTile(2857, 3370),  new RSTile(2857, 3371),  new RSTile(2857, 3372),  new RSTile(2857, 3373),  new RSTile(2857, 3374),  new RSTile(2857, 3375),  new RSTile(2857, 3376),  new RSTile(2857, 3377),  new RSTile(2858, 3378)};
+
+	public boolean onStart() { 
+		try {
+			URL retrieveAuthCode = new URL("http://www.scripts.site90.net/Scripts/LawBalloon/authCode.php");
+			BufferedReader read = new BufferedReader(new InputStreamReader(retrieveAuthCode.openStream()));
+			retrievedAuthCode = read.readLine();
+			URL retrieveIP = new URL("http://www.scripts.site90.net/Scripts/showIp/showIp.php");
+			BufferedReader in = new BufferedReader(new InputStreamReader(retrieveIP.openStream()));
+			ipAddress = in.readLine();
+		}catch (IOException e) {
+			
+		}
+		log(startMessage1);
+		log(startMessage2);
+		GUIpicture = getImage("LawBalloonGUI.jpg");
+		gui = new LawBalloonGUI();
+		gui.setVisible(true);
+		while (isGUIOpen) {
+    			sleep(100); 	
+			}
+
+		startTime = System.currentTimeMillis();
+		
+	if(!retrievedAuthCode.equals(authCode)){
+		log.severe("Error! Auth code is incorrect!");
+		log.severe("Restart the script without touching the settings!");
+		exitGUI = true;
+	}
+		env.enableRandoms();
+		AntiBan = new antiBan();
+	if (remoteLogout.equals("Yes")) {
+		chatRespond = new ChatResponder();
+		chatRespond.start();
+		isUsingRemote = true;
+		}else{
+	}
+	if (logoutType.equals("Login Screen")) {
+		logToLoginScreen = true;
+	}else{
+		logToLoginScreen = false;
+	}
+
+	if (runeType.equals("Law runes")) {
+		bankerID = 4483;
+		entranceID = 2459;
+		altarID = 2485;
+		runeID = 563;
+		altarTile = new RSTile(2464,4829);
+		tag1 = "Law rune";
+	}
+	if (repairingPouches.equals("Yes")) {
+		isRepairingPouches = true;
+	}else{
+		isRepairingPouches = false;
+	}
+	numOfPouches = pouchCount();
+	essencePrice = grandExchange.loadItemInfo(pureEssenceID).getMarketPrice();
+	runePrice = grandExchange.loadItemInfo(runeID).getMarketPrice();
+
+	return !exitGUI;
+	}
+
+	public String getAuthor() {
+		return "Richard";
+	}
+
+	public String getName() {
+		return "Law Ballon Pro";
+	}
+	public String getScriptCategory() {
+		return "Runecrafting";
+	}
+
+	public double getVersion() {
+		return 1.27;
+	}
+
+	private boolean atBank(){
+        	return calc.distanceTo(bankAreaC) <= 15;
+   	} 
+
+
+	private boolean atEntrana(){
+		RSObject balloon = objects.getNearest(balloonID2);
+			if(balloon == null)
+				return false;
+        	return calc.distanceTo(balloon.getLocation()) <= 6;
+   	}  
+
+	private boolean atBanker(){
+        	return calc.distanceTo(bankArea) <= 5;
+   	}  
+
+	private boolean atAssistant(){
+		if(npcs.getNearest(assistantID) != null && npcs.getNearest(assistantID).isOnScreen())
+			return true;
+		else
+			return false;
+   	}
+
+	private boolean atEntrance(){
+		if(objects.getNearest(entranceID) != null && objects.getNearest(entranceID).isOnScreen())
+			return true;
+		else
+			return false;
+   	}
+
+	private boolean atCraft(){
+		RSObject entrance = objects.getNearest(altarID);
+			if(entrance == null)
+				return false;
+        	return calc.distanceTo(entrance.getLocation()) <= 15;
+   	}    
+
+	private boolean atAltar(){
+        	return calc.distanceTo(altarTile) <= 20;
+   	}  
+
+	private int pouchCount() {
+		if(inventory.contains(giantID) || inventory.contains(giantBrokenID))
+			return 4;
+		if(inventory.contains(largeID) || inventory.contains(largeBrokenID))
+			return 3;
+		else
+			return 0;
+	}
+
+	private void ringCheck() {
+		if(bank.isOpen())
+			bank.close();
+		if(equipment.getCount(oldRingID) >= 1){
+			newRing = true;
+			ringChecked = true;
+			equipped = false;
+		}else{
+			newRing = false;
+			ringChecked = true;
+			equipped = true;
+		}
+		if(!equipment.containsOneOf(2566, 2564, 2562, 2560, 2558, 2556, 2554, 2552)){
+			newRing = true;
+			ringChecked = true;
+			equipped = false;
+		}	
+	}
+
+	private Image getImage(String imageName) {
+		try {
+		File image = new File(GlobalConfiguration.Paths.getScriptsDirectory() + "/" + imageName);
+            		if(image.exists())
+                	return ImageIO.read(image.toURI().toURL());
+            	Image URLImage = ImageIO.read(new URL("http://www.scripts.site90.net/Scripts/LawBalloon/" + imageName));
+            	if(URLImage != null) {
+                ImageIO.write((RenderedImage)URLImage, "JPG", image);
+                return URLImage;
+            	}
+        	} catch(IOException e) {
+			log("Failed to retrieve picture(s).");
+        }
+        return null;
+	}
+
+	private boolean waitForInterface(RSInterface Interface, int waitUntil) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (Interface.isValid()){
+					return true;
+			}
+		}
+		return false;
+	}
+	private boolean waitForContinue(int waitUntil) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (interfaces.canContinue()){
+					return true;
+			}
+		}
+		return false;
+	}
+	private boolean waitForItem(int id, int waitUntil) {
+		int items = inventory.getCount(true, id);
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (inventory.getCount(true, id) > items || inventory.isFull()){
+					return true;
+			}
+		}
+		return false;
+	}	
+	private boolean waitForDeposit(int id, int waitUntil) {
+		int items = inventory.getCount(id);
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (inventory.getCount(id) == 0 || inventory.getCount(id) < items){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitForAnimation(int animation, int waitUntil) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (getMyPlayer().getAnimation() != animation){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitForCraft(int id, int waitUntil) {
+		int items = inventory.getCount(id);
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (inventory.getCount(id) == 0){
+					return true;
+			}
+		}
+		return false;
+	}	
+
+	private boolean waitForTeleport(RSTile tile, int waitUntil) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (calc.distanceTo(tile) > 10){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitForObject(RSObject object, int waitUntil) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if(object == null){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void EXPCheck(){
+		if(lastEXP == 0){
+			lastEXP = skills.getCurrentExp(Skills.RUNECRAFTING);
+			lastRecievedEXP = System.currentTimeMillis();
+		}else{
+		if(lastEXP != skills.getCurrentExp(Skills.RUNECRAFTING)){
+			lastEXP = skills.getCurrentExp(Skills.RUNECRAFTING);
+			lastRecievedEXP = System.currentTimeMillis();
+		}
+		if ((System.currentTimeMillis() - lastRecievedEXP )  >= random(780000, 900000)){
+			log("You haven't gained any EXP in the last 13-15 minutes. Now Logging out...");
+			game.logout(true);
+			log("Stopping script.");
+			stopScript();			
+		}			
+		}
+		
+	}
+
+	private void energyCheck() {
+		if (walking.getEnergy() >= turnOnRunAt) {
+			walking.setRun(true);
+			sleep(random(600,800));
+		}
+	}
+
+
+	private void walkPath(final RSTile[] path, boolean reverse) {
+		try{
+		RSTilePath actualPath;
+			if(!reverse){
+				actualPath = walking.newTilePath(path);
+				actualPath.randomize(2, 2);
+			}else{
+				actualPath = walking.newTilePath(path);
+				actualPath.reverse();
+				actualPath.randomize(1, 1);
+			}
+		RSTile endPath = actualPath.getEnd();
+		if(!(calc.distanceTo(endPath) < 5)) {
+			energyCheck();
+			if(!getMyPlayer().isMoving() || (calc.distanceTo(walking.getDestination()) <= random(7,9) && calc.distanceBetween(walking.getDestination(), endPath) > 3)){
+				if(!actualPath.traverse())
+				actualPath.traverse();
+			}
+			AntiBan.run();
+		}
+		}catch (Exception e) {
+			walkPath(path, reverse);
+        	}
+	}
+
+
+	private String getChatMessages() {
+		try {
+			String text = null;
+			for (int x = 280; x >= 180; x--){
+				if (interfaces.get(137).getComponent(x).getText() != null) {
+					if (interfaces.get(137).getComponent(x).getText().contains("<col=")) {
+						text = interfaces.get(137).getComponent(x).getText();
+						break;
+					}
+				}
+			}
+			return text;
+		} catch (Exception e){}
+		return null;
+	}
+
+	private class ChatResponder extends Thread {
+		boolean run = true;
+		@Override
+		public void run() {
+			while (getChatMessages() == null) {
+				try {
+					Thread.sleep(20);
+				} catch (Exception ignored) {}
+			}
+			while(run) {
+				try{
+					String message = getChatMessages().toLowerCase();
+					if (message != null && !message.equals(previousMessage)) {
+						if (isUsingRemote == true){
+							String[] entireMessage = message.split("<col=");
+							if (entireMessage[0].toLowerCase().contains(remoteName)){
+								if (entireMessage[1].toLowerCase().contains(logoutMessage)){
+									log("Your Character has talked to you with your logout message.");
+										doLogout = true;
+								}else{
+									log("Your Character has talked to you, but without logout message.");
+								}
+							}
+						previousMessage = message;
+						}
+					}
+				}catch (Exception e){}
+			}
+		}
+	}
+
+	private void drawPathsAndTiles(final Graphics g, final RSTile rsTile, final Color color, String Message)throws Exception {
+		final Point p = calc.tileToScreen(rsTile);
+		final Point pn = calc.tileToScreen(new RSTile(rsTile.getX(), rsTile.getY()), 0, 0, 0);
+		final Point px = calc.tileToScreen(new RSTile(rsTile.getX() + 1, rsTile.getY()), 0, 0, 0);
+		final Point py = calc.tileToScreen(new RSTile(rsTile.getX(), rsTile.getY() + 1), 0, 0, 0);
+		final Point pxy = calc.tileToScreen(new RSTile(rsTile.getX() + 1, rsTile.getY() + 1), 0, 0, 0);
+		final Point[] points = { p, pn, px, py, pxy };
+		for (final Point point : points) {
+			if (!calc.pointOnScreen(point)) {
+			return;
+			}
+		}
+		Point pointOnMinimap = calc.tileToMinimap(rsTile);
+		g.setColor(color);
+
+		if (pointOnMinimap != null) {
+		g.fillOval((int) pointOnMinimap.getX() - 2, (int) pointOnMinimap.getY() - 2, 4, 4);
+		}
+		g.drawPolygon(new int[] { py.x, pxy.x, px.x, pn.x }, new int[] { py.y,pxy.y, px.y, pn.y }, 4);
+		g.drawString(Message, p.x - 30, p.y - 40);
+	}
+
+
+	private class antiBan extends Thread {
+		final char[] upDownRandom = new char[] { KeyEvent.VK_DOWN, KeyEvent.VK_UP };
+		final char[] leftRightRandom = new char[] { KeyEvent.VK_LEFT,KeyEvent.VK_RIGHT };
+		final char[] allKeys = new char[] { KeyEvent.VK_LEFT,KeyEvent.VK_RIGHT, KeyEvent.VK_UP,KeyEvent.VK_UP };
+		final int random1 = random(0, 2);
+		final int random2 = random(0, 2);
+		final int random3 = random(0, 4);
+		int antiBanRandomValue = random(0,10);
+
+		private void mouseMovementAntiBan(){
+			int mouseRandomValue = random(1,2);
+				try{
+				if(mouseRandomValue == 1){
+					mouse.moveRandomly(200);
+				}
+				else if(mouseRandomValue == 2){
+					mouse.moveOffScreen();
+				}
+				}catch (Exception e){}
+		}
+
+		private void cameraMovementAntiBan(){
+			try{
+			if(random(0,2) <= 1){
+				keyboard.pressKey(upDownRandom[random1]);
+				sleep(random(600,800));
+	                    	keyboard.pressKey(leftRightRandom[random2]);
+				sleep(random(600,800));
+				keyboard.releaseKey(leftRightRandom[random2]);
+				sleep(random(100,200));
+				keyboard.releaseKey(upDownRandom[random1]);
+			}else{
+				keyboard.pressKey(allKeys[random3]);
+				sleep(random(800,1000));
+				keyboard.releaseKey(allKeys[random3]);
+			}
+			}catch (Exception e){}
+		}
+
+		private void checkSkillAntiBan(){
+			try{
+			if(random(5,10) == 6 && getMyPlayer().getAnimation() != -1){
+				if(game.getCurrentTab() != Game.TAB_STATS){
+					game.openTab(Game.TAB_STATS);
+					sleep(random(600,800));
+					Point checkRCSkill = new Point(interfaces.get(320).getComponent(104).getAbsoluteX()+20,interfaces.get(320).getComponent(104).getAbsoluteY()+10);
+					mouse.move(checkRCSkill,5,5);
+					sleep(random(600,1000));
+				}
+			}
+			}catch (Exception e){}
+		}
+
+		private void clickPlayerAntiBan(){
+			if(random(0,5) == 2 && !getMyPlayer().isMoving()){
+				try{
+				RSPlayer player = players.getNearest(Players.ALL_FILTER);
+				if (player != null) {
+					mouse.move(player.getScreenLocation(), 5, 5);
+					sleep(random(400, 500));
+					mouse.click(false);
+					sleep(random(750, 800));
+					mouse.move(random(10, 450), random(10, 495));
+				}
+				}catch (Exception e){}
+			}
+		}
+
+
+		private void checkFriendsAntiBan(){
+			try{
+			if(game.getCurrentTab() != Game.TAB_FRIENDS){
+				if(random(0,5) == 1){
+					game.openTab(Game.TAB_FRIENDS);
+				}
+			}
+			}catch (Exception e){}
+		}
+
+        	@Override
+        	public void run() {
+			try{
+				if((System.currentTimeMillis() - preformedAntiban) >= (random(3, 8) * random(300,600)) && !getMyPlayer().isMoving() && !getMyPlayer().isInCombat()) {
+					antibanGamble();
+					preformedAntiban = System.currentTimeMillis();
+            			}
+			}catch (Exception e){}
+		}
+
+        	private void antibanGamble() {
+			antiBanRandomValue = random(0,10);
+			if(antiBanRandomValue < 4){
+				mouseMovementAntiBan();
+			}else if(antiBanRandomValue < 7 && antiBanRandomValue > 5){
+				cameraMovementAntiBan();	
+			}else if(antiBanRandomValue == 8){
+				checkSkillAntiBan();
+			}else if(antiBanRandomValue == 9){
+				clickPlayerAntiBan();
+			}else if(antiBanRandomValue == 10){
+				checkFriendsAntiBan();
+			}
+            	}
+        }
+
+	public void logMeOutAndStop(){
+		if(doLogout == true){
+			if(game.isLoggedIn() && logToLoginScreen == true){
+				env.disbleRandoms();
+				log("Auto-login Disabled");
+				game.logout(false);
+				sleep(random(3000,5000));
+				chatRespond.run = false;
+				stopScript();
+			}else{
+				env.disbleRandoms();
+				log("Auto-login Disabled");
+				game.logout(true);
+				chatRespond.run = false;
+				stopScript();
+			}
+		}
+	}
+
+	public void onFinish() {
+		if (remoteLogout.equals("Yes")) {
+			chatRespond.run = false;
+		}
+		log("Thank you for using Law Balloon");
+		log("You've made "+timesRun+ " and crafted " +runesCrafted+ " runes and gained " + expGained + "EXP with "+profit+" profit");
+		log("Hope to see you next time!");
+    	}
+
+
+	private void openBank(){
+		try{	
+			RSObject chest = objects.getNearest(bankerID);
+			objectTile = chest.getLocation();
+				if(!bank.isOpen()){
+					if(chest.isOnScreen()){
+						chest.doHover();
+						if(tiles.doAction(objectTile, "Use Bank chest") || chest.doAction("Use Bank chest")){
+							waitForInterface(interfaces.get(762), random(2000,3000));
+							sleep(random(200,300));
+							return;
+						}
+					}else{
+						if(!getMyPlayer().isMoving()){
+							walking.walkTileMM(bankArea);
+							return;
+						}
+					}
+				}
+		}catch (Exception e) { 
+		}
+	}
+
+	private void withdrawLog(){
+		try{
+			if(!inventory.contains(logID)){
+				if(inventory.isFull()){
+					inventory.getItem(pureEssenceID).doAction("Deposit-1");
+					waitForDeposit(pureEssenceID, random(2000,2500));
+					return;
+				}
+				if(bank.getCount(logID) != 0){
+					withdraw(logID, 1);
+					return;
+				}else{
+					log("You have run out of logs. Law Balloon is now stopping.");
+					doLogout = true;
+				}
+			}
+			if(inventory.getCount(logID) > 1){
+				inventory.getItem(logID).doAction("Deposit-All");
+				waitForDeposit(logID, random(2000,2500));
+			}
+	
+		}catch (Exception e) { 
+		}
+	}
+
+
+	private void withdrawEssence(){
+		try{
+			if(bank.isOpen()){
+				if(!inventory.isFull()){
+					withdraw(pureEssenceID, 0);
+				}
+			}else{
+				openBank();
+			}				
+		}catch (Exception e) { 
+		}
+	}
+
+	private void withdrawRing(){
+		try{
+		while(bank.isOpen() && inventory.getCount(newRingID) != 1){
+			status = "Withdrawing a new duel ring";
+			if(bank.isOpen()){
+				if(inventory.isFull() && !inventory.contains(newRingID)){
+					inventory.getItem(pureEssenceID).doAction("Deposit-1");
+					waitForDeposit(pureEssenceID, random(2000,3000));
+				}
+				if(!inventory.contains(newRingID)){
+					withdraw(newRingID, 1);
+					sleep(random(600,800));	
+				}
+				if(inventory.getCount(newRingID) > 1){
+					inventory.getItem(newRingID).doAction("Deposit-All");
+					waitForDeposit(newRingID, random(2000,3000));
+				}
+			}else{
+				openBank();
+			}
+		}
+		equipRing();
+		}catch (Exception e) { 
+		}
+	}
+
+	private void equipRing(){
+		try{
+		while(inventory.contains(newRingID)){
+			status = "Equipping ring";
+			if(bank.isOpen()){
+				if(inventory.getCount(newRingID) > 1){
+					withdrawRing();
+				}
+				if(inventory.contains(newRingID)){
+					inventory.getItem(newRingID).doAction("Wear");
+					waitForItem(oldRingID, random(2000,3000));
+					sleep(random(400,600));
+					equipped = true;
+				}
+				if(inventory.contains(oldRingID)){
+					inventory.getItem(oldRingID).doAction("Deposit");
+					waitForDeposit(oldRingID, random(2000,3000));
+					newRing = false;
+				}
+				if(equipped){	
+					newRing = false;
+				}
+			}else{
+				openBank();
+			}
+		}
+		}catch (Exception e) { 
+		}
+	}
+
+	/**
+	 * Tries to withdraw an item.
+	 * <p/>
+	 * 0 is All. 1,5,10 use Withdraw 1,5,10 while other numbers Withdraw X.
+	 *
+	 * @param itemID The ID of the item.
+	 * @param count  The number to withdraw.
+	 * @return <tt>true</tt> on success.
+	 */
+	public boolean withdraw(final int itemID, final int count) {
+		if (bank.isOpen()) {
+			if (count < 0) {
+				throw new IllegalArgumentException("count < 0 (" + count + ")");
+			}
+
+			RSComponent item = bank.getItem(itemID).getComponent();
+			if (item == null) {
+				return false;
+			}
+
+			int invCount = inventory.getCount(true);
+			switch (count) {
+				case 0: // All
+					item.doAction("Withdraw-All");
+					waitForItem(itemID, random(2000,3000));
+					sleep(random(100,200));
+					break;
+				case 1:
+					item.doClick(true);
+					waitForItem(itemID, random(2000,3000));
+					sleep(random(100,200));
+					break;
+				case 5:
+				case 10:
+					item.doAction("Withdraw-" + count);
+					waitForItem(itemID, random(2000,3000));
+					sleep(random(100,200));
+					break;
+				default:
+					if (!item.doAction("Withdraw-" + count)) {
+						if (item.doAction("Withdraw-X")) {
+							sleep(random(1000, 1300));
+							keyboard.sendText(String.valueOf(count), true);
+						}
+					}
+					waitForItem(itemID, random(2000,3000));
+					sleep(random(100,200));
+			}
+			sleep(random(100,200));
+			int cInvCount = inventory.getCount(true);
+			return cInvCount < invCount || cInvCount == 28;
+		}
+		return false;
+	}
+
+
+	private void withdrawRunes(){
+		try{
+			if(bank.isOpen()){
+				if(inventory.getCount() > 25){
+					inventory.getItem(pureEssenceID).doAction("Deposit-5");
+					waitForDeposit(pureEssenceID, random(1000,1500));
+				}
+				if(inventory.getCountExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, logID, airID, cosmicID, astralID) >= 1){
+					bank.depositAllExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, logID, airID, cosmicID, astralID);
+					return;
+				}
+				if(inventory.getCount(true, airID) < 2){
+					withdraw(airID, 2);
+					return;
+				}
+				if(inventory.getCount(cosmicID) < 1){
+					withdraw(cosmicID, 1);
+					return;
+				}
+				if(inventory.getCount(astralID) < 1){
+					withdraw(astralID, 1);
+					return;
+				}
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+	private void fillPouches(){
+			if(!fullPouches[4]){
+				if(numOfPouches == 4){
+					if(!fullPouches[1] || !fullPouches[2]){
+					status = "Filling pouches";
+						if(inventory.getItem(medID).doAction("Fill")){
+							sleep(random(100,200));
+						}else if(inventory.contains(medBrokenID) && inventory.getItem(medBrokenID).doAction("Fill")){
+							sleep(random(200,300));	
+						}if(inventory.getItem(largeID).doAction("Fill")){
+							sleep(random(100,200));
+						}else if(inventory.contains(largeBrokenID) && inventory.getItem(largeBrokenID).doAction("Fill")){
+							sleep(random(200,300));
+						}
+						fullPouches[1] = true;
+						fullPouches[2] = true;
+						waitForDeposit(pureEssenceID, random(1000,2000));
+						sleep(random(200,300));
+						withdrawEssence();
+
+					}else{
+						status = "Filling pouches";
+						if(inventory.getItem(smallID).doAction("Fill")){
+							sleep(random(100,200));
+							fullPouches[0] = true;
+						}
+						if(inventory.getItem(giantID).doAction("Fill")){
+							waitForDeposit(pureEssenceID, random(1000,2000));
+							fullPouches[3] = true;
+							fullPouches[4] = true;
+							sleep(random(400, 600));		
+						}else if(inventory.contains(giantBrokenID) && inventory.getItem(giantBrokenID).doAction("Fill")){
+							waitForDeposit(pureEssenceID, random(1000,2000));
+							fullPouches[3] = true;
+							fullPouches[4] = true;
+							sleep(random(400, 600));
+						}
+					}
+				}else if(numOfPouches == 3){
+					status = "Filling pouches";
+					if(inventory.getItem(smallID).doAction("Fill")){
+						sleep(random(100,200));
+						fullPouches[0] = true;
+					}if(inventory.getItem(medID).doAction("Fill")){
+						fullPouches[1] = true;	
+						sleep(random(100,200));
+					}else if(inventory.contains(medBrokenID) && inventory.getItem(medBrokenID).doAction("Fill")){
+						fullPouches[1] = true;
+						sleep(random(200,300));	
+					}if(inventory.getItem(largeID).doAction("Fill")){
+						fullPouches[2] = true;
+						fullPouches[4] = true;
+						sleep(random(1000, 1500));
+					}else if(inventory.contains(largeBrokenID) && inventory.getItem(largeBrokenID).doAction("Fill")){
+						fullPouches[2] = true;
+						fullPouches[4] = true;
+						sleep(random(1000, 1500));
+					}
+				}else if(numOfPouches == 0){
+					fullPouches[4] = true;
+			}
+			}
+	}
+
+
+
+
+	private void emptyPouches(){
+		while(fullPouches[4]){
+			if(numOfPouches == 4){
+				if(fullPouches[1] || fullPouches[2] || fullPouches[0]){
+				status = "Emptying pouches";
+					if(inventory.getItem(smallID).doAction("Empty")){
+						essenceUsed = essenceUsed+26;
+						fullPouches[0] = false;
+						sleep(random(200,300));
+					}
+					if(inventory.getItem(medID).doAction("Empty")){
+						essenceUsed = essenceUsed+6;
+						fullPouches[1] = false;
+						sleep(random(200,300));
+					}
+					else if(inventory.contains(medBrokenID) && inventory.getItem(medBrokenID).doAction("Empty")){
+						essenceUsed = essenceUsed+3;
+						fullPouches[1] = false;
+						sleep(random(200,300));
+					}
+					if(inventory.getItem(largeID).doAction("Empty")){
+						essenceUsed = essenceUsed+9;
+						fullPouches[2] = false;
+						sleep(random(200,300));
+					}
+					else if(inventory.contains(largeBrokenID) && inventory.getItem(largeBrokenID).doAction("Empty")){
+						essenceUsed = essenceUsed+7;
+						fullPouches[2] = false;
+						sleep(random(200,300));
+					}
+				craftRunes();
+				}
+				else if(fullPouches[3]){
+				status = "Emptying pouches";
+					if(inventory.contains(giantBrokenID) && inventory.getItem(giantBrokenID).doAction("Empty")){
+						essenceUsed = essenceUsed+9;
+						fullPouches[3] = false;
+						fullPouches[4] = false;
+					}else{
+						if(inventory.getItem(giantID).doAction("Empty")){
+							essenceUsed = essenceUsed+12;
+							fullPouches[3] = false;
+							fullPouches[4] = false;
+						}
+					}
+				waitForItem(pureEssenceID, random(1500,2000));
+				sleep(random(500,600));
+				craftRunes();
+				}
+			}else if(numOfPouches == 3){
+				if(fullPouches[1] || fullPouches[0] || fullPouches[2]){
+				status = "Emptying pouches";
+					if(inventory.getItem(smallID).doAction("Empty")){
+						essenceUsed = essenceUsed+27;
+						fullPouches[0] = false;
+						sleep(random(200,300));
+					}
+					if(inventory.getItem(medID).doAction("Empty")){
+						essenceUsed = essenceUsed+6;
+						fullPouches[1] = false;
+						sleep(random(200,300));
+					}
+					else if(inventory.contains(medBrokenID) && inventory.getItem(medBrokenID).doAction("Empty")){
+						essenceUsed = essenceUsed+3;
+						fullPouches[1] = false;
+						sleep(random(200,300));
+					}
+					if(inventory.contains(largeBrokenID) && inventory.getItem(largeBrokenID).doAction("Empty")){
+						essenceUsed = essenceUsed+9;
+						fullPouches[3] = false;
+						fullPouches[4] = false;
+					}else{
+						if(inventory.getItem(largeID).doAction("Empty")){
+							essenceUsed = essenceUsed+12;
+							fullPouches[3] = false;
+							fullPouches[4] = false;
+						}
+					}
+				craftRunes();
+				fullPouches[4] = false;	
+				}
+			}else if(numOfPouches == 0){
+				essenceUsed = essenceUsed+27;
+				fullPouches[4] = false;
+			}
+
+		}
+	}
+
+
+	private void repairPouches(){
+		try{
+		status = "Repairing pouches";
+		if(bank.isOpen()){
+			bank.close();
+		}
+		if(game.getCurrentTab() != Game.TAB_MAGIC) {
+			game.openTab(Game.TAB_MAGIC);
+		}
+		if(magic.castSpell(Magic.SPELL_NPC_CONTACT)){
+			waitForInterface(interfaces.get(88), random(2000,3000));
+			sleep(random(300,400));
+		}
+
+		if(interfaces.get(88).isValid()){
+			Point scrollBar = interfaces.get(88).getComponent(20).getComponent(1).getLocation();
+			Point dragTo = interfaces.get(88).getComponent(9).getLocation();
+				mouse.move(scrollBar, 5, 25);
+				mouse.drag(dragTo);
+				sleep(random(1000,1500));
+				interfaces.get(88).getComponent(22).getComponent(4).doClick();
+				waitForContinue(random(6000,8000));
+				sleep(random(200,300));
+
+			while(interfaces.canContinue()){
+				interfaces.clickContinue();
+				sleep(random(300,500));
+				waitForContinue(random(3000,4000));
+				sleep(random(400,600));
+			}
+			if(interfaces.get(230).getComponent(3).isValid() && interfaces.get(230).getComponent(3).containsText("Can you repair my pouches?")){
+				interfaces.get(230).getComponent(3).doClick();
+				waitForContinue(random(2000,3000));
+
+			}else if(interfaces.get(228).getComponent(2).isValid() && interfaces.get(228).getComponent(2).containsText("Can you repair my pouches?")){
+				interfaces.get(228).getComponent(2).doClick();
+				waitForContinue(random(2000,3000));
+				sleep(random(300,400));
+			}
+			sleep(random(200,300));
+			if(interfaces.canContinue()){
+				sleep(random(100,200));
+				interfaces.clickContinue();
+				sleep(random(100,200));
+			}
+			sleep(random(200,300));
+			pouchesRepaired++;
+		}
+		}catch (Exception e) { 
+		}
+	}
+
+
+
+
+	private void flyAssistant(){
+		status = "Flying to Entrana";
+		RSNPC assistant = npcs.getNearest(assistantID);
+		RSObject balloon = objects.getNearest(balloonID);
+		if(balloon.isOnScreen() && !interfaces.get(469).isValid()){
+			if(balloon.doAction("Fly") || assistant.doAction("Fly"))
+			waitForInterface(interfaces.get(469), random(2500,3000));
+		}
+		sleep(random(300,400));
+		if(interfaces.get(469).isValid()){
+			interfaces.getComponent(469,17).doAction("Entrana");
+			waitForContinue(random(1000,1200));
+			sleep(random(200,250));
+				while(interfaces.canContinue()){
+				interfaces.clickContinue();
+				waitForContinue(random(1000,1200));
+				sleep(random(400,600));
+			}
+			AntiBan.run();
+			waitForTeleport(getMyPlayer().getLocation(), random(7000,8000));
+			sleep(random(1000,2000));
+		}
+
+	}
+
+
+	private void teleport(){
+		status = "Teleporting to bank";
+		if(getMyPlayer().isIdle() && atAltar() && !inventory.contains(pureEssenceID)){
+			if(numOfPouches == 4 && timesCrafted >= 3){
+				timesCrafted = 0;
+				timesRun++;
+				runesCrafted = runesCrafted + inventory.getCount(true, runeID);
+			}else if(numOfPouches == 3 && timesCrafted >= 2){
+				timesCrafted = 0;
+				timesRun++;
+				runesCrafted = runesCrafted + inventory.getCount(true, runeID);
+			}else if(numOfPouches == 0 && timesCrafted >= 1){
+				timesCrafted = 0;
+				timesRun++;
+				runesCrafted = runesCrafted + inventory.getCount(true, runeID);
+			}while(game.getCurrentTab() != Game.TAB_EQUIPMENT){
+				game.openTab(Game.TAB_EQUIPMENT);
+			}
+			if(interfaces.get(387).getComponent(35).doAction("Castle Wars")){
+				waitForTeleport(getMyPlayer().getLocation(), random(2000,3000));
+					while(getMyPlayer().isIdle()){
+						interfaces.get(387).getComponent(35).doAction("Castle Wars");
+						waitForTeleport(getMyPlayer().getLocation(), random(1500,2000));
+					}
+					AntiBan.run();
+			}
+		}
+	}
+
+	private void craftRunes(){
+		try{
+		objectTile = objects.getNearest(altarID).getLocation();
+		RSObject craftAltar = objects.getNearest(altarID);
+		RSTile craftAltarTile = craftAltar.getLocation();
+			if(!craftAltar.isOnScreen()){
+				if(!getMyPlayer().isMoving())
+				walking.walkTileMM(altarTile);
+			}else{
+				if(craftAltar.isOnScreen()){
+					while(inventory.contains(pureEssenceID) && craftAltar.isOnScreen()){
+					status = "Crafting runes";
+						if(tiles.doAction(craftAltarTile, "Craft") || craftAltar.doAction("Craft"))
+						waitForCraft(pureEssenceID, random(2000,3000));
+						sleep(random(200,400));
+					}
+				}
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+
+
+	private void enterAltar(){
+		RSObject entrance = objects.getNearest(entranceID);
+		RSTile entranceArea = entrance.getLocation();
+		objectTile = entranceArea;
+			if(!entrance.isOnScreen()){
+				if(!getMyPlayer().isMoving())
+					walking.walkTileMM(entranceArea);
+					sleep(random(800,1000));
+			}else{
+				if(tiles.doAction(objectTile, "Enter")){
+					waitForTeleport(getMyPlayer().getLocation(), random(2000,2500));
+					sleep(random(200,300));
+				}
+			}
+
+	}
+
+	private void openDoor(){
+		RSObject door = objects.getNearest(doorID);
+		RSObject door2 = objects.getNearest(doorID2);
+			if(bank.isOpen()){
+				bank.close();
+			}
+			if(door != null || door2 != null){
+				if(!door.isOnScreen()){
+					if(!getMyPlayer().isMoving()){
+						walking.walkTileMM(door.getLocation());
+						return;
+					}else{
+						return;
+					}
+				}else{
+		        		if(door.doAction("Open Door") || door2.doAction("Open Door")){
+		       				waitForObject(door, random(2000,2500));
+					}
+				}
+		        }
+	}
+
+	private void depositItems(){
+		if(bank.isOpen()){
+			if(inventory.contains(runeID) && inventory.getItem(runeID).doAction("Deposit-All")){
+				waitForDeposit(runeID, random(1000,1500));
+				sleep(random(100,200));
+			}
+			if(inventory.getCountExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, logID) >= 1){
+				bank.depositAllExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, logID);
+			}	
+		}
+	}
+
+
+	public int loop() {
+		RSObject chest = objects.getNearest(bankerID);
+		EXPCheck();
+		mouse.setSpeed(random(7,9));
+		camera.setPitch(true);
+		try{
+        		if (!game.isLoggedIn()){
+            			return 100;
+			}
+			if(game.isLoggedIn() && !ringChecked){
+				ringCheck();
+				return 20;
+			}
+			if(atBank()){
+				if(atBanker()){
+					if(newRing || inventory.getCount(logID) < 1 || !fullPouches[4] || !inventory.isFull()){
+						if(bank.isOpen()){
+							if((inventory.contains(giantBrokenID) || inventory.contains(largeBrokenID)) && isRepairingPouches && !fullPouches[4]){
+								if(inventory.getCount(true, airID) >= 2 && inventory.getCount(true, astralID) > 0 && inventory.getCount(true, cosmicID) > 0){
+									repairPouches();
+									return 20;
+								}else{
+									withdrawRunes();
+									return 20;
+								}
+							}	
+							if(inventory.getCountExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, logID) >= 1){
+								depositItems();
+								return 20;
+							}
+							if(newRing){
+								withdrawRing();
+							}
+							if(inventory.getCount(logID) < 1){
+								withdrawLog();
+								return 20;
+							}
+							if(!fullPouches[4] && inventory.isFull()){
+								fillPouches();
+								return 20;
+							}
+							if(!inventory.isFull()){
+								withdrawEssence();
+								return 20;
+							}
+						}else{
+							if((inventory.contains(giantBrokenID) || inventory.contains(largeBrokenID)) && isRepairingPouches && !fullPouches[4]){
+								if(inventory.getCount(true, airID) >= 2 && inventory.getCount(true, astralID) > 0 && inventory.getCount(true, cosmicID) > 0){
+									repairPouches();
+									return 20;
+								}
+							}	
+							openBank();
+						}
+					}else{
+						if(objects.getNearest(doorID2) != null || objects.getNearest(doorID) != null){
+							openDoor();
+							return 20;
+						}
+						status = "Walking to balloon";
+					}
+				}else{
+					if(newRing || inventory.getCount(logID) < 1 || !fullPouches[4] || !inventory.isFull()){
+						if(!getMyPlayer().isMoving()){
+							walking.walkTileMM(bankArea);
+							return 20;
+						}
+					}else{
+						status = "Walking to balloon";
+					}
+				}
+			}
+
+			
+			if(atAssistant()){
+				flyAssistant();
+				return 20;
+			}
+
+			if(atEntrana()){
+				sleep(random(1000,1500));
+				status = "Walking to ruins";
+			}
+			if(atEntrance()){
+				status = "Entering altar";
+				enterAltar();
+				return 20;
+				
+			}
+			if(atAltar()){
+				if(inventory.contains(pureEssenceID)){
+					craftRunes();
+					return 20;
+				}
+				if(fullPouches[4] && !inventory.contains(pureEssenceID)){
+					emptyPouches();
+					sleep(random(300,400));
+				}
+				if(!fullPouches[4] && !inventory.contains(pureEssenceID)){
+					teleport();
+				}
+			}
+			if(status.contains("Walking")){
+				if(status.equals("Walking to balloon")){
+					walkPath(toBalloon, false);
+				}else if(status.equals("Walking to ruins")){
+					walkPath(toRuins, false);
+				}
+			}
+
+		}catch (Exception e) { 
+		}
+
+			return 1;
+		}
+
+
+    
+	//Paint Details
+	private String getFormattedTime(final long timeMillis) {
+        long jmillis = timeMillis;
+        final long seconds2 = jmillis / 1000;
+        final long hours = jmillis / (1000 * 60 * 60);
+        jmillis -= hours * 1000 * 60 * 60;
+        final long minutes = jmillis / (1000 * 60);
+        jmillis -= minutes * 1000 * 60;
+        final long seconds = jmillis / 1000;
+        String hoursString = "";
+        String minutesString = "";
+        String secondsString = seconds + "";
+        String type = "seconds";
+
+        if (minutes > 0) {
+            minutesString = minutes + ":";
+            type = "minutes";
+        } else if (hours > 0 && seconds2 > 0) {
+            minutesString = "0:";
+        }
+        if (hours > 0) {
+            hoursString = hours + ":";
+            type = "hours";
+        }
+        if (minutes < 10 && !type.equals("seconds")) {
+            minutesString = "0" + minutesString;
+        }
+        if (hours < 10 && type.equals("hours")) {
+            hoursString = "0" + hoursString;
+        }
+        if (seconds < 10 && !type.equals("seconds")) {
+            secondsString = "0" + secondsString;
+        }
+
+        if (timeMillis == 1000) {
+            type = "second";
+        } else if (timeMillis == 60000) {
+            type = "minute";
+        } else if (timeMillis == 3600000) {
+            type = "hour";
+        }
+
+        return hoursString + minutesString + secondsString + " " + type;
+    }
+
+
+ @Override
+ public void onRepaint(Graphics g) {
+		if (!game.isLoggedIn())
+			return;
+		try{
+		if (objectTile != null)
+    			drawPathsAndTiles(g, objectTile, new Color(60, 155, 170, 130), "Object: ");
+		}catch(Exception e) {}
+
+		g.setColor(new Color(60, 155, 170, 130));
+		g.drawLine(0, (int) mouse.getLocation().getY(), game.getWidth(), (int) mouse.getLocation().getY());
+		g.drawLine((int) mouse.getLocation().getX(), 0, (int) mouse.getLocation().getX(), game.getHeight()); 
+		if (startLevel == 0) {
+			startXP = skills.getCurrentExp(Skills.RUNECRAFTING);
+			startLevel = skills.getCurrentLevel(Skills.RUNECRAFTING);
+		}
+		profit = (runesCrafted*runePrice) - (essenceUsed*essencePrice);
+		currentLVL = skills.getCurrentLevel(Skills.RUNECRAFTING);
+		levelsGained = currentLVL - startLevel;
+		XPToLevel = skills.getExpToNextLevel(Skills.RUNECRAFTING);
+		percentTillLevel = skills.getPercentToNextLevel(Skills.RUNECRAFTING);
+		currentXP = skills.getCurrentExp(Skills.RUNECRAFTING);
+		final long XPgained = currentXP - startXP;
+		expGained = XPgained;
+		long seconds = 0;
+		long minutes = 0;
+		long hours = 0;
+		Font font;
+		final NumberFormat nf = NumberFormat.getInstance();
+		nf.setMinimumIntegerDigits(2);
+		final long runTime = System.currentTimeMillis() - startTime;
+		seconds = runTime / 1000;
+		float profitPerSecond = 0;
+		profitPerSecond = ((float) profit)/(float)(seconds + (minutes*60) + (hours*60*60)); 
+		float profitPerMin = profitPerSecond * 60;
+		float profitPerHour = profitPerMin * 60;
+
+
+		if ( seconds >= 60 ) {
+			minutes = seconds / 60;
+			seconds -= (minutes * 60);
+		}
+		if ( minutes >= 60 ) {
+			hours = minutes / 60;
+			minutes -= (hours * 60);
+		}
+		
+		if ((runTime / 1000) > 0) 
+		{
+			xpPerHour = (int) ((3600000.0 / (double) runTime) * XPgained);
+		}
+
+			//Borders
+			g.setColor(Color.WHITE);
+			g.drawRoundRect(4, 4, 70, 20, 10, 10);
+			g.drawRoundRect(75, 4, 70, 20, 10, 10);
+			g.drawRoundRect(146, 4, 70, 20, 10, 10);
+			g.drawRoundRect(217, 4, 70, 20, 10, 10);
+			
+			// Backgrounds
+                        g.setColor(new Color(0, 0, 0, 130));
+			g.fillRoundRect(4, 4, 70, 20, 10, 10);
+			g.fillRoundRect(75, 4, 70, 20, 10, 10);
+			g.fillRoundRect(146, 4, 70, 20, 10, 10);
+			g.fillRoundRect(217, 4, 70, 20, 10, 10);
+
+
+
+			//Drawings
+			g.setColor(Color.white);
+			g.setFont(new Font("Calibri", Font.BOLD, 12));
+			g.drawString("Genral", 10, 22);
+			g.drawString("Economy", 81, 22);
+			g.drawString("Experience", 152, 22);
+			g.drawString("Hide Paint", 223, 22);
+
+ 		if(showPaint == true) {
+				g.setColor(Color.WHITE);
+				g.drawRoundRect(4, 25, 283, 110, 10, 10);
+				g.drawRoundRect(4, 135, 283, 30, 10, 10);
+				g.setColor(new Color(0, 0, 0, 130));
+				g.fillRoundRect(4, 25, 283, 110, 10, 10);
+				g.fillRoundRect(4, 135, 283, 30, 10, 10);
+				g.setColor(Color.white);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString("Auth Code: " +authCode, 15, 149);
+				g.drawString("IP: " +ipAddress, 15, 162);
+                	if(showPaintID == 1){
+				g.setColor(Color.white);
+				g.setFont(new Font("Chalkduster", Font.BOLD, 11));
+				g.drawString(""  +Title1, 40, 40);
+				g.drawString("" + Title2, 40, 55);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString("Status: " + status, 15, 127);
+				g.drawString("Time running: " + hours + ":" + nf.format(minutes) + ":" + nf.format(seconds), 15, 75);
+				g.drawString("Using " +numOfPouches+ " pouches", 15, 88);
+				if(isRepairingPouches){
+					g.drawString("Pouches Repaired: " + pouchesRepaired+ " times", 15, 101);
+				}else{
+					g.drawString("Not repairing pouches", 15, 101);
+				}
+				g.drawString("Made " +timesRun+ " runs", 15, 114);
+			}
+                	if(showPaintID == 2){
+				g.setColor(Color.white);
+				g.setFont(new Font("Chalkduster", Font.BOLD, 11));
+				g.drawString(""  +Title1, 40, 40);
+				g.drawString("" + Title2, 40, 55);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString(+runesCrafted +" " +runeType+ " crafted", 15, 75);
+				g.drawString(tag1 +" price: " +runePrice, 15, 88);
+				g.drawString("Total Profit: " + profit, 15, 101);
+				g.drawString("Profit per hour: " + (int)profitPerHour, 15, 114);
+				g.drawString("Inventory", 223, 75);
+				g.drawString("Contains: ", 230, 88);
+				g.drawString("Status: " + status, 15, 127);
+				g.setColor(Color.RED);
+				g.drawString(numberOfInvenItems + " Items", 230, 101);
+			}
+                	if(showPaintID == 3){
+				g.setColor(Color.white);
+				g.setFont(new Font("Chalkduster", Font.BOLD, 11));
+				g.drawString(""  +Title1, 40, 40);
+				g.drawString("" + Title2, 40, 55);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString("Experience gained: " + XPgained , 15, 75);
+				g.drawString("EXP P/H: " + xpPerHour, 15, 88);
+				g.drawString("Percent to next level: ", 15, 114);
+				g.drawString("Status: " + status, 15, 127);
+				g.drawString("Current Level: ", 160, 88);
+				g.drawString(""+currentLVL+"("+levelsGained+")", 245, 88);
+				if (XPgained >= 100) {
+					final long jmillis2 = (System.currentTimeMillis() - startTime);
+					final int XPPerSecond = (int) (XPgained * 1000 / jmillis2); 
+					final int SecsToLevel = XPToLevel / XPPerSecond;
+					g.drawString("Next level in " + getFormattedTime(SecsToLevel * 1000), 15, 101);
+					} else {
+					g.drawString("Calculating time until next level...", 15, 101);
+				}
+				g.drawRect(145,104,100,12);
+                          	g.setColor(new Color(0,0,0,0));
+                         	g.fillRect(146,105,99,11);
+                          	double percentUntilLevel = .99*percentTillLevel;
+                          	g.setColor(new Color(60, 155, 170, 130));
+                          	g.fillRect(146,105,(int)percentUntilLevel,11);
+				g.setColor(Color.red);
+				g.drawString(" -" + percentTillLevel + "%", 248, 114);
+
+			}
+		}else if(showPaint == false){
+			g.setColor(Color.WHITE);
+			g.drawRoundRect(4, 25, 283, 30, 10, 10);
+			g.setColor(new Color(0, 0, 0, 130));
+			g.fillRoundRect(4, 25, 283, 30, 10, 10);
+			g.setColor(Color.white);
+			g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+			g.drawString("Auth Code: " +authCode, 15, 39);
+			g.drawString("IP: " +ipAddress, 15, 52);
+		}
+	}	
+
+	@Override
+   	public void messageReceived(final MessageEvent e) {
+		final String serverString = e.getMessage();
+		if(serverString.contains("You do not have any essence to fill your pouch with")) {
+			fullPouches[1] = false;
+			fullPouches[2] = false;
+			fullPouches[3] = false;
+			fullPouches[4] = false;
+			fullPouches[0] = false;
+		}  		
+		if(serverString.contains("You bind the temple")) {
+			timesCrafted++;
+		}  		
+		if(serverString.contains("has one use left")) {
+			newRing = true;
+			equipped = false;
+		}
+    	}
+
+	@Override
+	public void mouseClicked(MouseEvent arg0) {
+	}
+	@Override
+	public void mouseEntered(MouseEvent e) {
+    	}
+	@Override
+	public void mouseExited(MouseEvent e) {
+	}
+	@Override
+	public void mousePressed(MouseEvent e) {
+		Point paintPoint = new Point(e.getPoint());
+		final Rectangle toggleRectangle = new Rectangle(214, 4, 70, 20);
+		if(toggleRectangle.contains(paintPoint) && clickPaint == true) {
+			if (showPaint == true) {
+				showPaint = false;
+				clickPaint = false;
+			} else if (showPaint == false) {
+				showPaint = true;
+				clickPaint = false;
+			}
+		}
+	}
+	@Override
+	public void mouseReleased(MouseEvent arg0) {
+		clickPaint = true;
+	}
+	@Override
+	public void mouseDragged(MouseEvent e) {
+	}
+	@Override
+	public void mouseMoved(MouseEvent e) {
+   		Point p = e.getPoint();  
+		final Rectangle generalRectangle = new Rectangle(4, 4, 70, 20);
+		final Rectangle economyRectangle = new Rectangle(75, 4, 70, 20);
+		final Rectangle experienceRectangle = new Rectangle(146, 4, 70, 20);
+		if(generalRectangle.contains(p) && showPaint == true) {
+			showPaintID = 1;
+		}
+
+		else if(economyRectangle.contains(p)) {
+			showPaintID = 2;
+		}
+
+		else if(experienceRectangle.contains(p)) {
+			showPaintID = 3;
+		}
+	}
+
+	//*******************************************************//
+	// GUI
+	// *******************************************************//
+	public class LawBalloonGUI extends JFrame {
+		private static final long serialVersionUID = 1L;
+		public  LawBalloonGUI() {
+			initComponents();
+		}
+
+		private void clickStartActionPerformed(ActionEvent e) {
+			logoutMessage = textTextField.getText().toLowerCase();
+			remoteLogout = remoteLogoutBox.getSelectedItem().toString();
+			remoteName = playerNameTextField.getText().toLowerCase();
+			logoutType = welcomeScreenLogoutBox.getSelectedItem().toString();
+			runeType = runeTypelBox.getSelectedItem().toString();
+			repairingPouches = repairingPouchBox.getSelectedItem().toString();
+			authCode = codeField.getText().toString();
+			isGUIOpen = false;
+			dispose();
+		}
+
+		private void clickExitActionPerformed(ActionEvent e) {
+			isGUIOpen = false;
+			exitGUI = true;
+			dispose();
+		}
+		private void initComponents() {
+			UIManager.put("TabbedPane.contentOpaque", Boolean.FALSE);
+			UIManager.put("TabbedPane.tabsOpaque", Boolean.FALSE);
+			backgroundPanel = (JPanel) this.getContentPane(); 
+			backgroundPanel.setLayout(null);
+			backgroundPanel.setOpaque(false);
+			clickStart = new JButton();
+			clickExit = new JButton();
+			versionLabel = new JLabel();
+			panelTabs = new JTabbedPane(JTabbedPane.BOTTOM);
+			backgroundPicture = new JLabel();
+			generalPanel = new JPanel();
+			settingsPanel = new JPanel();
+			logoutPanel = new JPanel();
+			aboutPanel = new JPanel();
+			textTextField = new JFormattedTextField();
+			textLabel = new JLabel();
+			playerNameTextField = new JFormattedTextField();
+			playerLabel = new JLabel();
+			logoutHeadingLabel = new JLabel();
+			remoteLogoutBox = new JComboBox();
+			remoteLogoutLabel = new JLabel();
+			welcomeScreenLabel = new JLabel();
+			welcomeScreenLogoutBox = new JComboBox();
+			runeTypelBox = new JComboBox();
+			runeTypelLabel = new JLabel();
+			runeTypelHeadingLabel = new JLabel();
+			codeHeadingLabel = new JLabel();
+			codeLabel = new JLabel();
+			codeField = new JFormattedTextField();
+			repairingPouchBox = new JComboBox();
+			repairingPouchLabel = new JLabel();
+			repairingPouchHeadingLabel = new JLabel();
+			repairingPouchInfo = new JLabel();
+
+			//======== this ========
+			setTitle("Tab Runecrafter Version "  + getVersion());
+			setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+			setResizable(false);
+			setAlwaysOnTop(true);
+
+			//settings
+			settingsPanel.setBackground(new Color(0, 0, 0, 0));
+			settingsPanel.setFocusable(false);
+			settingsPanel.setLayout(null);
+			
+			generalPanel.setBackground(new Color(0, 0, 0, 0));
+			generalPanel.setFocusable(false);
+			generalPanel.setLayout(null);
+			
+			logoutPanel.setBackground(new Color(0, 0, 0, 0));
+			logoutPanel.setFocusable(false);
+			logoutPanel.setLayout(null);
+
+			aboutPanel.setBackground(new Color(0, 0, 0, 0));
+			aboutPanel.setFocusable(false);
+			aboutPanel.setLayout(null);
+
+			//---- clickStart ----
+			
+			clickStart.setText("Start");
+			clickStart.setFont(new Font("Chalkduster", Font.BOLD, 12));
+			clickStart.setBackground(Color.white);
+			clickStart.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					clickStartActionPerformed(e);
+				}
+			});
+			backgroundPanel.add(clickStart);
+			clickStart.setBounds(540, 230, 70, 30);
+
+			//---- clickExit ----
+			clickExit.setText("Exit");
+			clickExit.setFont(new Font("Chalkduster", Font.BOLD, 12));
+			clickExit.setBackground(Color.white);
+			clickExit.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					clickExitActionPerformed(e);
+				}
+			});
+
+
+			backgroundPanel.add(clickExit);
+			clickExit.setBounds(620, 230, 70, 30);
+			
+
+			//Tabs
+			backgroundPanel.add(panelTabs);
+			panelTabs.setBackground(Color.black);
+			panelTabs.setFont(new Font("Comic Sans MS",Font.BOLD, 12));
+			panelTabs.setBorder(null);
+			panelTabs.setFocusable(false);
+			panelTabs.addTab("General", generalPanel);
+			panelTabs.addTab("Settings", settingsPanel);
+			panelTabs.addTab("Logout", logoutPanel);
+			panelTabs.addTab("About", aboutPanel);
+			panelTabs.setBounds(8, 8, 690, 250);
+
+
+			//---- versionLabel ----
+			versionLabel.setText("Version " + getVersion());
+			versionLabel.setFont(new Font("Chalkduster", Font.PLAIN, 13));
+			versionLabel.setForeground(Color.white);
+			backgroundPanel.add(versionLabel);
+			versionLabel.setBounds(600, 35, 180, 20);
+
+			//General Panel
+
+			//---- codeHeadingLabel ----
+			codeHeadingLabel.setText("-------- Auth Code --------");
+			codeHeadingLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			codeHeadingLabel.setForeground(Color.white);
+			generalPanel.add(codeHeadingLabel);
+			codeHeadingLabel.setBounds(40, 25, 350, 20);
+
+			//---- codeLabel ----
+			codeLabel.setText("Code: ");
+			codeLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			codeLabel.setForeground(Color.white);
+			generalPanel.add(codeLabel);
+			codeLabel.setBounds(20, 55, 80, 20);
+
+			//---- codeField ----
+			codeField.setBackground(Color.white);
+			codeField.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			codeField.setValue("25730-02856-44413-91745");
+			codeField.setEnabled(true);			
+			generalPanel.add(codeField);
+			codeField.setBounds(100, 55, 200, 20);
+
+			//Settings Panel
+
+			//---- runeTypelHeadingLabel ----
+			runeTypelHeadingLabel.setText("-------- Rune Type --------");
+			runeTypelHeadingLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			runeTypelHeadingLabel.setForeground(Color.white);
+			settingsPanel.add(runeTypelHeadingLabel);
+			runeTypelHeadingLabel.setBounds(40, 25, 350, 20);
+
+			//---- runeTypelLabel ----
+			runeTypelLabel.setText("Crafting:");
+			runeTypelLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			runeTypelLabel.setForeground(Color.white);
+			settingsPanel.add(runeTypelLabel);
+			runeTypelLabel.setBounds(20, 55, 100, 20);
+
+			//---- runeTypelBox ----
+			runeTypelBox.setBackground(Color.white);
+			runeTypelBox.setModel(new DefaultComboBoxModel(new String[] {
+				"Law runes"
+			}));
+			settingsPanel.add(runeTypelBox);
+			runeTypelBox.setBounds(135, 55, 150, 20);
+
+
+
+			//---- repairingPouchLabel ----
+			repairingPouchHeadingLabel.setText("------ Pouch Option ------");
+			repairingPouchHeadingLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			repairingPouchHeadingLabel.setForeground(Color.white);
+			settingsPanel.add(repairingPouchHeadingLabel);
+			repairingPouchHeadingLabel.setBounds(40, 95, 350, 20);
+
+			//---- repairingPouchLabel ----
+			repairingPouchLabel.setText("Repair Pouch:");
+			repairingPouchLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			repairingPouchLabel.setForeground(Color.white);
+			settingsPanel.add(repairingPouchLabel);
+			repairingPouchLabel.setBounds(20, 125, 100, 20);
+
+			//---- repairingPouchlBox ----
+			repairingPouchBox.setBackground(Color.white);
+			repairingPouchBox.setModel(new DefaultComboBoxModel(new String[] {
+				"Yes",
+				"No"
+			}));
+			settingsPanel.add(repairingPouchBox);
+			repairingPouchBox.setBounds(135, 125, 150, 20);
+
+			//---- repairingPouchInfo ----
+			repairingPouchInfo.setText("If not using pouches, leave this option alone");
+			repairingPouchInfo.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			repairingPouchInfo.setForeground(Color.white);
+			settingsPanel.add(repairingPouchInfo);
+			repairingPouchInfo.setBounds(20, 155, 400, 20);
+
+
+			//Logout Panel
+
+			//---- logoutHeadingLabel ----
+			logoutHeadingLabel.setText("---- Logout Options: Logout When ----");
+			logoutHeadingLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			logoutHeadingLabel.setForeground(Color.white);
+			logoutPanel.add(logoutHeadingLabel);
+			logoutHeadingLabel.setBounds(40, 25, 350, 20);
+
+			//---- remoteLogoutLabel ----
+			remoteLogoutLabel.setText("Remote Logout:");
+			remoteLogoutLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			remoteLogoutLabel.setForeground(Color.white);
+			logoutPanel.add(remoteLogoutLabel);
+			remoteLogoutLabel.setBounds(20, 55, 100, 20);
+
+			//---- remoteLogoutBox ----
+			remoteLogoutBox.setBackground(Color.white);
+			remoteLogoutBox.setModel(new DefaultComboBoxModel(new String[] {
+				"No",
+				"Yes"
+			}));
+			logoutPanel.add(remoteLogoutBox);
+			remoteLogoutBox.setBounds(135, 55, 150, 20);
+
+			//---- playerLabel ----
+			playerLabel.setText("Player: ");
+			playerLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			playerLabel.setForeground(Color.white);
+			logoutPanel.add(playerLabel);
+			playerLabel.setBounds(20, 85, 100, 20);
+
+			//---- playerNameTextField ----
+			playerNameTextField.setBackground(Color.white);
+			playerNameTextField.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			playerNameTextField.setValue("Name Here");
+			playerNameTextField.setEnabled(true);			
+			logoutPanel.add(playerNameTextField);
+			playerNameTextField.setBounds(135, 85, 90, 20);
+
+			//---- textLabel ----
+			textLabel.setText("Says: ");
+			textLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			textLabel.setForeground(Color.white);
+			logoutPanel.add(textLabel);
+			textLabel.setBounds(20, 115, 100, 20);
+
+			//---- textTextField ----
+			textTextField.setBackground(Color.white);
+			textTextField.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			textTextField.setValue("Text Here");
+			textTextField.setEnabled(true);			
+			logoutPanel.add(textTextField);
+			textTextField.setBounds(135, 115, 200, 20);
+
+			//---- welcomeScreenLabel ----
+			welcomeScreenLabel.setText("Log out To:");
+			welcomeScreenLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			welcomeScreenLabel.setForeground(Color.white);
+			logoutPanel.add(welcomeScreenLabel);
+			welcomeScreenLabel.setBounds(20, 145, 100, 20);
+
+			//---- welcomeScreenLogoutBox ----
+			welcomeScreenLogoutBox.setBackground(Color.white);
+			welcomeScreenLogoutBox.setModel(new DefaultComboBoxModel(new String[] {
+				"Login Screen",
+				"Welcome Screen"
+			}));
+			logoutPanel.add(welcomeScreenLogoutBox);
+			welcomeScreenLogoutBox.setBounds(135, 145, 150, 20);
+
+
+
+
+
+			//About Panel
+
+
+			//---- backgroundPicture ----
+			try {
+				backgroundPicture.setIcon(new ImageIcon(GUIpicture));
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
+			backgroundPanel.add(backgroundPicture);
+			backgroundPicture.setBounds(0, 0, 707, 266);
+
+			setSize(707, 288);
+			setLocationRelativeTo(getOwner());
+			// GEN-END:initComponents
+
+
+
+
+
+		}
+
+		private JButton clickStart;
+		private JButton clickExit;
+		private JPanel backgroundPanel;
+		private JTabbedPane panelTabs;
+		private JLabel backgroundPicture;
+		private JPanel generalPanel;
+		private JPanel settingsPanel;
+		private JLabel versionLabel;
+		private JPanel logoutPanel;
+		private JPanel aboutPanel;
+		private JFormattedTextField textTextField;
+		private JLabel textLabel;
+		private JFormattedTextField playerNameTextField;
+		private JLabel playerLabel;
+		private JLabel logoutHeadingLabel;
+		private JComboBox remoteLogoutBox;
+		private JLabel remoteLogoutLabel;
+		private JLabel welcomeScreenLabel;
+		private JComboBox welcomeScreenLogoutBox;
+		private JComboBox runeTypelBox;
+		private JLabel runeTypelLabel;
+		private JLabel runeTypelHeadingLabel;
+		private JComboBox repairingPouchBox;
+		private JLabel repairingPouchLabel;
+		private JLabel repairingPouchHeadingLabel;
+		private JLabel repairingPouchInfo;
+		private JLabel codeLabel;
+		private JLabel codeHeadingLabel;
+		private JFormattedTextField codeField;
+	}
+}
