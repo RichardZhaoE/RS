@@ -1,0 +1,2542 @@
+//*******************************************************//
+//Living Rock Cavern Miner 2011
+//Author: Richard
+//Redistributing and releasing different versions is not allowed unless granted permission by Richard
+//
+// *******************************************************//
+
+import java.util.*;
+import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.KeyEvent;
+import java.awt.image.RenderedImage;
+import java.awt.image.BufferedImage;
+import java.text.NumberFormat;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
+import java.io.*; 
+import java.net.*; 
+import javax.swing.JOptionPane; 
+import javax.swing.JFileChooser;  
+import java.io.IOException;
+import javax.imageio.ImageIO;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JTextField;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.UIManager;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.JFormattedTextField;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.WindowConstants;
+import javax.swing.ImageIcon;
+import org.rsbot.util.GlobalConfiguration;
+
+import org.rsbot.script.Script;
+import org.rsbot.script.ScriptManifest;
+import org.rsbot.script.wrappers.*;
+import org.rsbot.event.listeners.*;
+import org.rsbot.event.events.*;
+import org.rsbot.script.methods.Skills;
+import org.rsbot.script.methods.Game;
+import org.rsbot.script.methods.Players;
+
+@ScriptManifest(authors = {"Richard"}, keywords = "Mining", name = "Living Cavern Miner", version = 1.00, description = ("Living Rock Cavern Miner by Richard"))
+              
+public class LRCMiner extends Script implements PaintListener, MessageListener,  MouseListener, MouseMotionListener {
+
+	final public ScriptManifest properties = getClass().getAnnotation(ScriptManifest.class);
+
+	public BufferedImage banner = null;
+    	LRCMinerGUI gui;
+	public boolean isGUIOpen = true, exitGUI;
+	ChatResponder chatRespond;
+	antiBan AntiBan;
+	private Properties settings = new Properties();
+
+	RSArea miningArea = new RSArea(new RSTile(3600, 5050), new RSTile(3750, 5162)), bankArea = new RSArea(new RSTile(3652, 5109), new RSTile(3658, 5116)), lumbridgeArea = new RSArea(new RSTile(2985, 3211), new RSTile(3235, 3350)), faladorArea = new RSArea(new RSTile(2950, 3320), new RSTile(3100, 3400)), cabinArea = new RSArea(new RSTile(3056, 3370), new RSTile(3065, 3380)), mineArea = new RSArea(new RSTile(3011, 9774), new RSTile(3059, 9842)), rockOneArea, rockTwoArea, rockThreeArea;
+
+	int doorID = 11714, doorID2 = 11715, stairsID = 30944, depositCart = 45079, entranceID = 45077, ropeUpID = 45078, obeliskID = 5787, rockID, deadRockID, foodID = 0, oreID, orePrice = 0, coalPrice = 0, goldPrice = 0, equip1 = 0, equip2 = 0, lastEXP = 0, currentRockNumber = 0, previousRockNumber = 0, timesAttacked = 0, foodCount = 0, eatWhenHpBelow = 250, turnOnRunAt = random(50,80), restoreSummoningAt = 0, restoreSummoningPouchID = 0, familiarID = 0, sine = 0, sineM = 1, oresMined = 0, deaths = 0, xpPerHour = 0, totalXP = 0, levelGained = 0, oresGained = 0, startXP = 0, XPToLevel = 0, startLevel = 0, percentTillLevel = 0, currentXP = 0, profit = 0, numberOfInvenItems;
+
+	public RSTile cartTile, stairsTile, rockTile, obeliskTile, entrancePortalTile, rockNumberTile, entranceTile = new RSTile(3015,9830);
+
+
+	public boolean reEquip = true, reEquipPickaxe = true;
+    	final int[] reEquipID = {1275, 1271, 1273, 1269, 1267, 1265, 15259};
+	final int pickaxe[] = {1265, 1267, 1269, 1273, 1271, 1275, 15259, 14069, 16912};
+	final int dontDrop[] = {1265, 1267, 1269, 1273, 1271, 1275, 15259, 14069, 16912, equip2, equip1, foodID};
+	
+
+	public String status = null, undoStatus = null, numberOfRocks, previousMessage = null, BP, PS, UN;
+
+	RSObject Rock;
+	public boolean guiStart = false, twoRocks, isRockDead1 = false, isRockDead2 = false, isRockDead3 = false, checkedRock = false, waitForRock = false, checkOtherRock = false, hasBanked = true, bankedFamiliar = true, isEating = false, isPowerMining = false, isQuickDeposit = false, isUsingFamiliar = false, isUsingQuickPrayer = false, walkedToSafeSpot = true, isBankingFamiliar = false, needToRenewFamiliar = true, isUsingRemote = false, logToLoginScreen = true, doLogout = false;
+
+	long preformedAntiban = System.currentTimeMillis(), lastRecievedEXP = 0, expGained = 0;
+
+	public Object equip1GUI, equip2GUI, eatWhenHpBelowGUI;
+
+	public String quickPrayer, powerMining, familiarType, quickDeposit, remoteLogout, logoutType, startMessage1 = "Hello. Thank you for choosing Richard's LRC Miner", startMessage2 = "Initializing script...", stopMessage1 = "Thank you for using Richard's LRC Miner!", stopMessage2 = "Please report any bugs and post your proggies!", stopMessage3 = "Stopping Script...", graveMessage1 = "Opps! Clicked Gravestone! Now closing...", graveMessage2 = "Gravestone message closed!", goldMessage, coalMessage, priceMessage, eatFood, remoteName = "", logoutMessage = "";
+
+	public static boolean updateAvail = false;
+	
+	//Paint
+	long seconds = 0, minutes = 0, hours = 0;
+	NumberFormat nf = NumberFormat.getInstance();
+	int currentLvl = 0;
+	public long startTime = 0;
+	public String familiarName, foodName, oreTag;
+	public Image GUIpicture;
+	public String Title1 = "Richard's LRCMiner ReInVenTeD";
+	public String Title2 = "Version v"+getVersion()+" EpiC";
+	
+	boolean showPaint = true, clickPaint = true;
+	public int showPaintID = 1;
+	String authCode, ipAddress, retrievedAuthCode;
+
+	//Safespots
+	public RSTile walkToSafeSpot, rock1SafeSpotN, rock1SafeSpotW, rock1SafeSpotS, rock1SafeSpotE, rock2SafeSpotN, rock2SafeSpotW, rock2SafeSpotS, rock2SafeSpotE, rock3SafeSpotN, rock3SafeSpotW, rock3SafeSpotS, rock3SafeSpotE, rockOneTile, rockTwoTile, rockThreeTile, objectTile = null;
+
+	//Paths
+	public RSTile[] rock2ToRock3, rock1ToRock3, rock1ToRock2, bankToRock3, bankToRock2, bankToRock1;
+	RSTile[] bankToRope = { new RSTile(3658,5118), new RSTile(3651,5122) }, ropeToObelisk = { new RSTile(3013,9831), new RSTile(3018,9831), new RSTile(3025,9828), new RSTile(3031,9823) }, stairsToRope = { new RSTile(3058,9777), new RSTile(3057,9777), new RSTile(3056,9777), new RSTile(3055,9777), new RSTile(3054,9778), new RSTile(3053,9779), new RSTile(3052,9779), new RSTile(3051,9780), new RSTile(3050,9781), new RSTile(3049,9782), new RSTile(3048,9783), new RSTile(3048,9784), new RSTile(3048,9785), new RSTile(3047,9786), new RSTile(3046,9787), new RSTile(3045,9788), new RSTile(3044,9789), new RSTile(3043,9790), new RSTile(3042,9791), new RSTile(3042,9792), new RSTile(3042,9793), new RSTile(3042,9794), new RSTile(3042,9795), new RSTile(3042,9796), new RSTile(3042,9798), new RSTile(3042,9799), new RSTile(3042,9800), new RSTile(3042,9801), new RSTile(3042,9802), new RSTile(3042,9803), new RSTile(3042,9804), new RSTile(3042,9805), new RSTile(3043,9806), new RSTile(3044,9807), new RSTile(3045,9808), new RSTile(3045,9809), new RSTile(3045,9810), new RSTile(3045,9811), new RSTile(3045,9812), new RSTile(3044,9813), new RSTile(3043,9814), new RSTile(3042,9815), new RSTile(3042,9816), new RSTile(3042,9817), new RSTile(3042,9818), new RSTile(3042,9819), new RSTile(3042,9820), new RSTile(3042,9821), new RSTile(3042,9822), new RSTile(3042,9823), new RSTile(3042,9824), new RSTile(3043,9825), new RSTile(3043,9826), new RSTile(3043,9827), new RSTile(3043,9828), new RSTile(3042,9829), new RSTile(3041,9830), new RSTile(3040,9831), new RSTile(3039,9832), new RSTile(3038,9832), new RSTile(3037,9832), new RSTile(3036,9832), new RSTile(3035,9832), new RSTile(3034,9832), new RSTile(3033,9832), new RSTile(3032,9832), new RSTile(3031,9832), new RSTile(3030,9832), new RSTile(3029,9832), new RSTile(3028,9832), new RSTile(3027,9832), new RSTile(3026,9833), new RSTile(3025,9833), new RSTile(3024,9833), new RSTile(3023,9833), new RSTile(3022,9833), new RSTile(3021,9833), new RSTile(3020,9833), new RSTile(3019,9833), new RSTile(3018,9833), new RSTile(3017,9833), new RSTile(3016,9833), new RSTile(3015,9832), new RSTile(3014,9832), new RSTile(3013,9832) },  castleToHouse = {  new RSTile(3007,3325), new RSTile(3007,3337), new RSTile(3007,3348), new RSTile(3007,3354), new RSTile(3007,3362), new RSTile(2971,3343) , new RSTile(2970,3343), new RSTile(2969,3343), new RSTile(2968,3344), new RSTile(2967,3345), new RSTile(2966,3346), new RSTile(2965,3347), new RSTile(2964,3347), new RSTile(2964,3348), new RSTile(2964,3349), new RSTile(2964,3350), new RSTile(2964,3351), new RSTile(2965,3352), new RSTile(2964,3353), new RSTile(2964,3354), new RSTile(2964,3355), new RSTile(2964,3356), new RSTile(2964,3357), new RSTile(2964,3358), new RSTile(2964,3359), new RSTile(2964,3360), new RSTile(2964,3361), new RSTile(2964,3362), new RSTile(2964,3363), new RSTile(2964,3364), new RSTile(2965,3367), new RSTile(2965,3368), new RSTile(2965,3369), new RSTile(2965,3370), new RSTile(2965,3371), new RSTile(2965,3372), new RSTile(2965,3373), new RSTile(2965,3374), new RSTile(2966,3375), new RSTile(2967,3376), new RSTile(2967,3377), new RSTile(2968,3378), new RSTile(2969,3379), new RSTile(2970,3379), new RSTile(2971,3379), new RSTile(2972,3379), new RSTile(2973,3379), new RSTile(2974,3379), new RSTile(2975,3379), new RSTile(2976,3379), new RSTile(2977,3379), new RSTile(2978,3379), new RSTile(2979,3379), new RSTile(2980,3378), new RSTile(2981,3377), new RSTile(2982,3376), new RSTile(2983,3376), new RSTile(2984,3375), new RSTile(2985,3374), new RSTile(2986,3374), new RSTile(2987,3373), new RSTile(2988,3372), new RSTile(2989,3371), new RSTile(2990,3371), new RSTile(2991,3370), new RSTile(2992,3369), new RSTile(2993,3368), new RSTile(2994,3367), new RSTile(2995,3366), new RSTile(2996,3366), new RSTile(2996,3365), new RSTile(2997,3364), new RSTile(2998,3363), new RSTile(2999,3362), new RSTile(2999,3362), new RSTile(3000,3362), new RSTile(3001,3362), new RSTile(3002,3362), new RSTile(3003,3362), new RSTile(3004,3362), new RSTile(3005,3362), new RSTile(3006,3362), new RSTile(3007,3362), new RSTile(3008,3362), new RSTile(3009,3362), new RSTile(3010,3362), new RSTile(3011,3362), new RSTile(3012,3362), new RSTile(3013,3362), new RSTile(3014,3362), new RSTile(3015,3362), new RSTile(3016,3362), new RSTile(3017,3362), new RSTile(3018,3362), new RSTile(3019,3362), new RSTile(3020,3362), new RSTile(3021,3362), new RSTile(3022,3362), new RSTile(3023,3361), new RSTile(3024,3360), new RSTile(3025,3359), new RSTile(3026,3358), new RSTile(3027,3358), new RSTile(3028,3358), new RSTile(3029,3358), new RSTile(3030,3358), new RSTile(3031,3358), new RSTile(3032,3358), new RSTile(3033,3358), new RSTile(3034,3358), new RSTile(3035,3358), new RSTile(3036,3358), new RSTile(3037,3358), new RSTile(3038,3358), new RSTile(3039,3358), new RSTile(3040,3358), new RSTile(3041,3358), new RSTile(3042,3358), new RSTile(3043,3358), new RSTile(3044,3358), new RSTile(3045,3359), new RSTile(3046,3359), new RSTile(3047,3359), new RSTile(3048,3359), new RSTile(3049,3359), new RSTile(3050,3359), new RSTile(3051,3359), new RSTile(3052,3360), new RSTile(3053,3361), new RSTile(3054,3362), new RSTile(3054,3363), new RSTile(3054,3364), new RSTile(3054,3365), new RSTile(3054,3366), new RSTile(3054,3367), new RSTile(3054,3368), new RSTile(3055,3369), new RSTile(3056,3370), new RSTile(3057,3371), new RSTile(3058,3371), new RSTile(3059,3371), new RSTile(3060,3372), new RSTile(3061,3373), new RSTile(3061,3374)},  lumbridgeToHouse = { new RSTile(3221, 3218), new RSTile(3222, 3218), new RSTile(3223, 3218), new RSTile(3224, 3218), new RSTile(3225, 3218), new RSTile(3226, 3218), new RSTile(3227, 3218), new RSTile(3228, 3218), new RSTile(3229, 3218), new RSTile(3230, 3218), new RSTile(3231, 3218), new RSTile(3232, 3218), new RSTile(3232, 3219), new RSTile(3233, 3219), new RSTile(3233, 3220), new RSTile(3234, 3220), new RSTile(3234, 3221), new RSTile(3235, 3221), new RSTile(3235, 3222), new RSTile(3235, 3223), new RSTile(3235, 3224), new RSTile(3235, 3225), new RSTile(3235, 3226), new RSTile(3234, 3227), new RSTile(3234, 3228), new RSTile(3233, 3228), new RSTile(3232, 3229), new RSTile(3231, 3230), new RSTile(3230, 3231), new RSTile(3230, 3232), new RSTile(3229, 3232), new RSTile(3228, 3233), new RSTile(3227, 3234), new RSTile(3226, 3234), new RSTile(3225, 3235), new RSTile(3225, 3236), new RSTile(3224, 3236), new RSTile(3224, 3237), new RSTile(3225, 3237), new RSTile(3224, 3238), new RSTile(3224, 3239), new RSTile(3224, 3240), new RSTile(3223, 3241), new RSTile(3222, 3242), new RSTile(3221, 3243), new RSTile(3220, 3244), new RSTile(3219, 3245), new RSTile(3218, 3245), new RSTile(3217, 3245), new RSTile(3216, 3245), new RSTile(3215, 3245), new RSTile(3214, 3245), new RSTile(3213, 3245), new RSTile(3212, 3246), new RSTile(3211, 3246), new RSTile(3210, 3246), new RSTile(3209, 3246), new RSTile(3208, 3246), new RSTile(3207, 3246), new RSTile(3206, 3246), new RSTile(3205, 3246), new RSTile(3204, 3246), new RSTile(3203, 3246), new RSTile(3202, 3246), new RSTile(3201, 3246), new RSTile(3200, 3246), new RSTile(3199, 3245), new RSTile(3199, 3244), new RSTile(3198, 3244), new RSTile(3197, 3244), new RSTile(3196, 3244), new RSTile(3195, 3244), new RSTile(3194, 3244), new RSTile(3193, 3244), new RSTile(3192, 3244), new RSTile(3191, 3244), new RSTile(3190, 3244), new RSTile(3189, 3244), new RSTile(3188, 3244), new RSTile(3187, 3244), new RSTile(3186, 3244), new RSTile(3185, 3244), new RSTile(3184, 3244), new RSTile(3182, 3244), new RSTile(3181, 3243), new RSTile(3180, 3243), new RSTile(3179, 3243), new RSTile(3178, 3243), new RSTile(3177, 3243), new RSTile(3176, 3243), new RSTile(3175, 3244), new RSTile(3174, 3245), new RSTile(3173, 3245), new RSTile(3172, 3245), new RSTile(3171, 3245), new RSTile(3170, 3244), new RSTile(3169, 3243), new RSTile(3168, 3243), new RSTile(3167, 3242), new RSTile(3166, 3242), new RSTile(3165, 3242), new RSTile(3164, 3241), new RSTile(3163, 3240), new RSTile(3162, 3240), new RSTile(3161, 3240), new RSTile(3160, 3239), new RSTile(3159, 3238), new RSTile(3158, 3239), new RSTile(3157, 3239), new RSTile(3156, 3239), new RSTile(3155, 3239), new RSTile(3154, 3239), new RSTile(3153, 3238), new RSTile(3152, 3237), new RSTile(3151, 3237), new RSTile(3150, 3237), new RSTile(3149, 3237), new RSTile(3148, 3237), new RSTile(3147, 3236), new RSTile(3146, 3236), new RSTile(3145, 3236), new RSTile(3144, 3236), new RSTile(3143, 3235), new RSTile(3142, 3235), new RSTile(3141, 3235), new RSTile(3140, 3235), new RSTile(3139, 3235), new RSTile(3138, 3235), new RSTile(3137, 3235), new RSTile(3136, 3235), new RSTile(3135, 3234), new RSTile(3135, 3233), new RSTile(3135, 3232), new RSTile(3134, 3232), new RSTile(3133, 3232), new RSTile(3132, 3232), new RSTile(3131, 3232), new RSTile(3130, 3232), new RSTile(3129, 3231), new RSTile(3128, 3230), new RSTile(3127, 3229), new RSTile(3127, 3228), new RSTile(3126, 3228), new RSTile(3125, 3228), new RSTile(3124, 3228), new RSTile(3123, 3228), new RSTile(3122, 3228), new RSTile(3121, 3228), new RSTile(3120, 3228), new RSTile(3119, 3228), new RSTile(3118, 3228), new RSTile(3117, 3228), new RSTile(3116, 3228), new RSTile(3115, 3228), new RSTile(3114, 3228), new RSTile(3113, 3228), new RSTile(3112, 3229), new RSTile(3112, 3230), new RSTile(3111, 3230), new RSTile(3110, 3231), new RSTile(3109, 3232), new RSTile(3109, 3233), new RSTile(3109, 3234), new RSTile(3108, 3235), new RSTile(3108, 3236), new RSTile(3108, 3237), new RSTile(3108, 3238), new RSTile(3108, 3239), new RSTile(3108, 3240), new RSTile(3108, 3241), new RSTile(3107, 3242), new RSTile(3106, 3243), new RSTile(3105, 3244), new RSTile(3105, 3245), new RSTile(3105, 3246), new RSTile(3105, 3247), new RSTile(3104, 3248), new RSTile(3103, 3248), new RSTile(3103, 3249), new RSTile(3104, 3250), new RSTile(3104, 3251), new RSTile(3104, 3252), new RSTile(3104, 3253), new RSTile(3104, 3254), new RSTile(3104, 3255), new RSTile(3104, 3256), new RSTile(3104, 3257), new RSTile(3104, 3258), new RSTile(3104, 3259), new RSTile(3104, 3260), new RSTile(3104, 3261), new RSTile(3104, 3262), new RSTile(3104, 3263), new RSTile(3104, 3264), new RSTile(3104, 3265), new RSTile(3104, 3266), new RSTile(3104, 3267), new RSTile(3104, 3268), new RSTile(3104, 3269), new RSTile(3104, 3270), new RSTile(3104, 3271), new RSTile(3104, 3272), new RSTile(3104, 3273), new RSTile(3104, 3274), new RSTile(3104, 3275), new RSTile(3104, 3276), new RSTile(3104, 3277), new RSTile(3104, 3278), new RSTile(3105, 3279), new RSTile(3106, 3280), new RSTile(3107, 3281), new RSTile(3106, 3281), new RSTile(3105, 3281), new RSTile(3104, 3282), new RSTile(3103, 3283), new RSTile(3102, 3284), new RSTile(3101, 3285), new RSTile(3100, 3285), new RSTile(3099, 3285), new RSTile(3098, 3285), new RSTile(3097, 3285), new RSTile(3096, 3285), new RSTile(3095, 3286), new RSTile(3095, 3287), new RSTile(3095, 3288), new RSTile(3095, 3289), new RSTile(3094, 3289), new RSTile(3093, 3289), new RSTile(3092, 3289), new RSTile(3091, 3288), new RSTile(3090, 3288), new RSTile(3089, 3288), new RSTile(3088, 3288), new RSTile(3087, 3288), new RSTile(3086, 3289), new RSTile(3085, 3289), new RSTile(3084, 3289), new RSTile(3083, 3289), new RSTile(3082, 3289), new RSTile(3081, 3289), new RSTile(3080, 3289), new RSTile(3079, 3288), new RSTile(3078, 3287), new RSTile(3077, 3286), new RSTile(3076, 3285), new RSTile(3075, 3284), new RSTile(3074, 3283), new RSTile(3074, 3282), new RSTile(3074, 3281), new RSTile(3074, 3280), new RSTile(3074, 3279), new RSTile(3073, 3278), new RSTile(3072, 3277), new RSTile(3071, 3277), new RSTile(3070, 3277), new RSTile(3069, 3277), new RSTile(3068, 3277), new RSTile(3067, 3277), new RSTile(3066, 3277), new RSTile(3065, 3277), new RSTile(3064, 3277), new RSTile(3063, 3277), new RSTile(3062, 3277), new RSTile(3061, 3277), new RSTile(3060, 3277), new RSTile(3059, 3277), new RSTile(3058, 3277), new RSTile(3057, 3276), new RSTile(3056, 3276), new RSTile(3055, 3276), new RSTile(3054, 3276), new RSTile(3053, 3276), new RSTile(3052, 3276), new RSTile(3051, 3276), new RSTile(3050, 3276), new RSTile(3049, 3276), new RSTile(3048, 3276), new RSTile(3047, 3276), new RSTile(3046, 3276), new RSTile(3045, 3276), new RSTile(3044, 3276), new RSTile(3043, 3276), new RSTile(3042, 3276), new RSTile(3041, 3276), new RSTile(3040, 3276), new RSTile(3039, 3276), new RSTile(3038, 3276), new RSTile(3037, 3276), new RSTile(3036, 3276), new RSTile(3035, 3276), new RSTile(3034, 3276), new RSTile(3033, 3277), new RSTile(3032, 3277), new RSTile(3031, 3277), new RSTile(3030, 3277), new RSTile(3029, 3277), new RSTile(3028, 3277), new RSTile(3027, 3277), new RSTile(3026, 3277), new RSTile(3025, 3276), new RSTile(3024, 3276), new RSTile(3023, 3276), new RSTile(3022, 3276), new RSTile(3021, 3276), new RSTile(3020, 3276), new RSTile(3019, 3276), new RSTile(3018, 3276), new RSTile(3017, 3276), new RSTile(3016, 3276), new RSTile(3015, 3276), new RSTile(3014, 3276), new RSTile(3013, 3276), new RSTile(3012, 3276), new RSTile(3011, 3277), new RSTile(3010, 3278), new RSTile(3010, 3279), new RSTile(3010, 3280), new RSTile(3010, 3281), new RSTile(3010, 3282), new RSTile(3010, 3283), new RSTile(3010, 3284), new RSTile(3009, 3285), new RSTile(3008, 3286), new RSTile(3007, 3287), new RSTile(3007, 3288), new RSTile(3007, 3289), new RSTile(3007, 3290), new RSTile(3007, 3291), new RSTile(3007, 3292), new RSTile(3007, 3293), new RSTile(3007, 3294), new RSTile(3007, 3295), new RSTile(3007, 3296), new RSTile(3007, 3297), new RSTile(3007, 3298), new RSTile(3007, 3299), new RSTile(3007, 3300), new RSTile(3007, 3301), new RSTile(3007, 3302), new RSTile(3007, 3303), new RSTile(3007, 3304), new RSTile(3007, 3305), new RSTile(3007, 3306), new RSTile(3007, 3307), new RSTile(3007, 3308), new RSTile(3007, 3309), new RSTile(3007, 3310), new RSTile(3007, 3311), new RSTile(3006, 3312), new RSTile(3006, 3313), new RSTile(3006, 3314), new RSTile(3006, 3315), new RSTile(3006, 3316), new RSTile(3006, 3317), new RSTile(3006, 3318), new RSTile(3006, 3319), new RSTile(3006, 3320), new RSTile(3006, 3321), new RSTile(3006, 3322), new RSTile(3006, 3323), new RSTile(3006, 3324), new RSTile(3006, 3325), new RSTile(3006, 3326), new RSTile(3006, 3327), new RSTile(3006, 3328), new RSTile(3006, 3329), new RSTile(3006, 3330), new RSTile(3006, 3331), new RSTile(3006, 3332), new RSTile(3006, 3333), new RSTile(3006, 3334), new RSTile(3006, 3335), new RSTile(3006, 3336), new RSTile(3006, 3337), new RSTile(3006, 3338), new RSTile(3006, 3339), new RSTile(3006, 3340), new RSTile(3006, 3341), new RSTile(3006, 3342), new RSTile(3006, 3343), new RSTile(3006, 3344), new RSTile(3006, 3345), new RSTile(3007, 3346), new RSTile(3008, 3346), new RSTile(3009, 3346), new RSTile(3010, 3346), new RSTile(3011, 3347), new RSTile(3012, 3348), new RSTile(3012, 3349), new RSTile(3013, 3350), new RSTile(3014, 3350), new RSTile(3015, 3350), new RSTile(3016, 3350), new RSTile(3017, 3350), new RSTile(3018, 3350), new RSTile(3019, 3350), new RSTile(3020, 3350), new RSTile(3021, 3350), new RSTile(3022, 3350), new RSTile(3023, 3351), new RSTile(3024, 3351), new RSTile(3025, 3351), new RSTile(3026, 3351), new RSTile(3027, 3351), new RSTile(3028, 3351), new RSTile(3029, 3351), new RSTile(3030, 3351), new RSTile(3031, 3351), new RSTile(3032, 3351), new RSTile(3033, 3351), new RSTile(3034, 3352), new RSTile(3035, 3353), new RSTile(3036, 3354), new RSTile(3037, 3355), new RSTile(3038, 3355), new RSTile(3039, 3356), new RSTile(3040, 3356), new RSTile(3041, 3356), new RSTile(3042, 3356), new RSTile(3043, 3357), new RSTile(3044, 3358), new RSTile(3045, 3359), new RSTile(3046, 3360), new RSTile(3046, 3359), new RSTile(3047, 3359), new RSTile(3048, 3359), new RSTile(3049, 3359), new RSTile(3050, 3359), new RSTile(3051, 3359), new RSTile(3052, 3360), new RSTile(3053, 3361), new RSTile(3054, 3362), new RSTile(3054, 3363), new RSTile(3054, 3364), new RSTile(3054, 3365), new RSTile(3054, 3366), new RSTile(3054, 3367), new RSTile(3054, 3368), new RSTile(3055, 3369), new RSTile(3056, 3370), new RSTile(3057, 3371), new RSTile(3058, 3371), new RSTile(3059, 3371), new RSTile(3060, 3372), new RSTile(3061, 3373), new RSTile(3061, 3374)};
+
+
+
+
+	public boolean onStart() {
+		try {
+			URL retrieveIP = new URL("http://cscripts.site90.net/Scripts/showIp/showIp.php");
+			BufferedReader readIP = new BufferedReader(new InputStreamReader(retrieveIP.openStream()));
+			ipAddress = readIP.readLine();
+			URL retrieveAuthCode = new URL("http://www.scripts.site90.net/Scripts/LRCMiner/authCode.php");
+			BufferedReader read = new BufferedReader(new InputStreamReader(retrieveAuthCode.openStream()));
+			retrievedAuthCode = read.readLine();
+		}catch (IOException e) {
+		}
+			URLConnection url = null; 
+			BufferedReader in = null; 
+			BufferedWriter out = null;
+        	try{
+			url = new URL("http://www.scripts.site90.net/Scripts/LRCMiner/versionINFO.php").openConnection(); 
+			in = new BufferedReader(new InputStreamReader(url.getInputStream()));
+			if(Double.parseDouble(in.readLine()) > getVersion()) {
+					updateAvail = true;
+				if(JOptionPane.showConfirmDialog(null, "An update has been found. \nDo you wish to update your script? \nYour current script version:" +getVersion()) == 0){
+					JOptionPane.showMessageDialog(null, "Please locate your 'LRCMiner.java'"); 
+					JFileChooser fc = new JFileChooser(); 
+					if(fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION){ 
+						url = new URL("http://www.scripts.site90.net/Scripts/LRCMiner/LRCMiner.java").openConnection(); 
+						in = new BufferedReader(new InputStreamReader(url.getInputStream())); 
+						out = new BufferedWriter(new FileWriter(fc.getSelectedFile().getPath())); 
+					String inp; 
+					while((inp = in.readLine()) != null){ 
+						out.write(inp); 
+						out.newLine(); 
+						out.flush(); 
+					} 
+						log("Script has been updated successfully. Please recompile."); 
+					return false; 
+					}else log("Update has been canceled"); 
+				}else log("Update has been canceled"); 
+			}
+		if(in != null) 
+			in.close(); 
+		if(out != null) 
+			out.close(); 
+		}catch (IOException e){ 
+			log("Error retrieving version number!"); 
+		} 
+			try {
+		final URL bannerURL = new URL("http://www.scripts.site90.net/Scripts/LRCMiner/LRCMinerBanner.gif");
+		banner = ImageIO.read(bannerURL);
+			} catch (MalformedURLException e) {
+				log("Unable to buffer banner.");
+			} catch (IOException e) {
+				log("Unable to open banner image.");
+			}
+		log(startMessage1);
+		log(startMessage2);
+		goldPrice = grandExchange.loadItemInfo(444).getMarketPrice();
+		coalPrice = grandExchange.loadItemInfo(453).getMarketPrice();
+		GUIpicture = getImage("LRCMinerGUI.jpg");
+		gui = new LRCMinerGUI();
+		gui.setVisible(true);
+		while (isGUIOpen) {
+    			sleep(100); 	
+			}
+		startTime = System.currentTimeMillis();
+	if(!retrievedAuthCode.equals(authCode)){
+		log.severe("Error! Auth code is incorrect!");
+		log.severe("Restart the script without touching the settings!");
+		exitGUI = true;
+	}
+
+		env.enableRandoms();
+		AntiBan = new antiBan();
+	if (remoteLogout.equals("Yes")) {
+		chatRespond = new ChatResponder();
+		chatRespond.start();
+	}
+	if (quickDeposit.equals("No")) {
+		isQuickDeposit = false;
+	}else{
+		isQuickDeposit = true;
+	}	
+
+	if (quickPrayer.equals("No")) {
+		isUsingQuickPrayer = false;
+	}else{
+		isUsingQuickPrayer = true;
+	}
+
+	if (remoteLogout.equals("No")) {
+		isUsingRemote = false;
+	}else{
+		isUsingRemote = true;
+	}
+
+	if (powerMining.equals("Yes")) {
+		isPowerMining = true;
+	}else{
+		isPowerMining = false;
+	}
+
+	if (logoutType.equals("Login Screen")) {
+		logToLoginScreen = true;
+	}else{
+		logToLoginScreen = false;
+	}
+
+	if (eatFood.equals("None")) {
+		foodID = 0;
+		isEating = false;
+	}else if (eatFood.equals("Trout")) {
+		foodID = 329;
+		foodName = "Trout";
+		isEating = true;
+	}else if (eatFood.equals("Salmon")) {
+		foodID = 333;
+		foodName = "Salmon";
+		isEating = true;
+	}else if (eatFood.equals("Tuna")) {
+		foodID = 361;
+		foodName = "Tuna";
+		isEating = true;
+	}else if (eatFood.equals("Lobster")) {
+		foodID = 379;
+		foodName = "Lobster";
+		isEating = true;
+	}else if (eatFood.equals("Swordfish")) {
+		foodID = 373;
+		foodName = "Swordfish";
+		isEating = true;
+	}else if (eatFood.equals("Monkfish")) {
+		foodID = 7946;
+		foodName = "Monkfish";
+		isEating = true;
+	}else if (eatFood.equals("Manta ray")) {
+		foodID = 391;
+		foodName = "Manta Ray";
+		isEating = true;
+	}else if (eatFood.equals("Shark")) {
+		foodID = 385;
+		foodName = "Shark";
+		isEating = true;
+	}else if (eatFood.equals("Cavefish")) {
+		foodID = 15266;
+		foodName = "Cavefish";
+		isEating = true;
+	}else if (eatFood.equals("Rocktail")) {
+		foodID = 15272;
+		foodName = "Rocktail";
+		isEating = true;
+	}
+	if (familiarType.equals("None")) {
+		restoreSummoningPouchID = 0;
+		isUsingFamiliar = false;
+		familiarID = 0;
+		restoreSummoningAt = 0;
+		familiarName = "None";
+		isBankingFamiliar = false;
+		bankedFamiliar = true;
+	}else if (familiarType.equals("Desert Wyrm")) {
+		restoreSummoningPouchID = 12049;
+		familiarID = 0;
+		isUsingFamiliar = true;
+		restoreSummoningAt = 2;
+		familiarName = "Desert Wyrm";
+		isBankingFamiliar = false;
+		bankedFamiliar = false;
+	}else if (familiarType.equals("Spirit Terrorbird")) {
+		restoreSummoningPouchID = 12007;
+		familiarID = 6794;
+		isUsingFamiliar = true;
+		restoreSummoningAt = 7;
+		familiarName = "Terrorbird";
+		isBankingFamiliar = true;
+		bankedFamiliar = false;
+	}else if (familiarType.equals("War Tortoise")) {
+		restoreSummoningPouchID = 12031;
+		familiarID = 6815;
+		isUsingFamiliar = true;
+		restoreSummoningAt = 8;
+		familiarName = "War Tortoise";
+		isBankingFamiliar = true;
+		bankedFamiliar = false;
+	}else if (familiarType.equals("Obsidian Golem")) {
+		restoreSummoningPouchID = 12792;
+		familiarID = 0;
+		isUsingFamiliar = true;
+		restoreSummoningAt = 9;
+		familiarName = "Obsidian Golem";
+		isBankingFamiliar = false;
+		bankedFamiliar = false;
+	}else if (familiarType.equals("Lava Titan")) {
+		restoreSummoningPouchID = 12788;
+		familiarID = 0;
+		isUsingFamiliar = true;
+		restoreSummoningAt = 83;
+		familiarName = "Lava Titan";
+		isBankingFamiliar = false;
+		bankedFamiliar = false;
+	}else if (familiarType.equals("Pack Yak")) {
+		restoreSummoningPouchID = 12093;
+		familiarID = 6873;
+		isUsingFamiliar = true;
+		restoreSummoningAt = 11;
+		familiarName = "Pack Yak";
+		isBankingFamiliar = true;
+		bankedFamiliar = false;
+	}
+
+	if (numberOfRocks.equals("2 Gold Rocks")) {
+		goldMessage = "Retrieving price of gold ore...";
+		priceMessage = "Price retrieved. " +goldPrice+ " per ore. Script is now starting.";
+		orePrice = grandExchange.getMarketPrice(444);
+        	log(goldMessage);
+		log(priceMessage);
+		oreTag = "Gold ores mined: ";
+		rockID = 45076;
+		deadRockID = 45075;
+		oreID = 444;
+		twoRocks = true;
+		rock1SafeSpotN = new RSTile(3669,5076);
+		rock1SafeSpotW = new RSTile(3669,5076);
+		rock1SafeSpotS = new RSTile(3669,5076);
+		rock1SafeSpotE = new RSTile(3669,5076);
+		rock2SafeSpotN = new RSTile(3638,5096);
+		rock2SafeSpotW = new RSTile(3636,5094);
+		rock2SafeSpotS = new RSTile(3638,5093);
+		rock2SafeSpotE = new RSTile(3640,5095);
+		rock3SafeSpotN = new RSTile(3689,5106);
+		rock3SafeSpotW = new RSTile(3689,5106);
+		rock3SafeSpotS = new RSTile(3689,5106);
+		rock3SafeSpotE = new RSTile(3689,5106);
+		rockOneArea = new RSArea(new RSTile(3665, 5073), new RSTile(3670, 5080));
+		rockTwoArea = new RSArea(new RSTile(3634, 5089), new RSTile(3644, 5099));
+		rockThreeArea = new RSArea(new RSTile(3685, 5103), new RSTile(3690, 5110));
+		bankToRock1 = new RSTile[] { new RSTile(3654,5113), new RSTile(3655,5113), new RSTile(3656,5113), new RSTile(3657,5112), new RSTile(3657,5111), new RSTile(3657,5110), new RSTile(3657,5109), new RSTile(3657,5108), new RSTile(3657,5107), new RSTile(3657,5106), new RSTile(3657,5105), new RSTile(3657,5104), new RSTile(3657,5103), new RSTile(3657,5102), new RSTile(3657,5101), new RSTile(3657,5100), new RSTile(3657,5099), new RSTile(3657,5098), new RSTile(3657,5097), new RSTile(3657,5096), new RSTile(3657,5095), new RSTile(3657,5094), new RSTile(3657,5093), new RSTile(3657,5092), new RSTile(3657,5091), new RSTile(3657,5090), new RSTile(3658,5089), new RSTile(3659,5089), new RSTile(3659,5088), new RSTile(3660,5087), new RSTile(3661,5086), new RSTile(3662,5085), new RSTile(3663,5084), new RSTile(3664,5084), new RSTile(3664,5083), new RSTile(3665,5082), new RSTile(3666,5082), new RSTile(3666,5081), new RSTile(3667,5080), new RSTile(3668,5079),  new RSTile(3669,5078), new RSTile(3669,5077), new RSTile(3669,5076) };
+		bankToRock2 = new RSTile[] { new RSTile(3654,5113), new RSTile(3655,5113), new RSTile(3656,5113), new RSTile(3657,5112), new RSTile(3657,5111), new RSTile(3657,5110), new RSTile(3657,5109), new RSTile(3657,5108), new RSTile(3657,5107), new RSTile(3657,5106), new RSTile(3657,5105), new RSTile(3657,5104), new RSTile(3657,5103), new RSTile(3657,5102), new RSTile(3657,5101), new RSTile(3657,5100), new RSTile(3656,5099), new RSTile(3655,5098), new RSTile(3654,5097), new RSTile(3653,5097), new RSTile(3652,5096), new RSTile(3651,5095), new RSTile(3650,5095), new RSTile(3649,5095), new RSTile(3648,5095), new RSTile(3647,5095), new RSTile(3646,5095), new RSTile(3645,5095), new RSTile(3644,5095), new RSTile(3643,5095), new RSTile(3642,5095), new RSTile(3639,5093) };
+		bankToRock3 = new RSTile[] {  new RSTile(3654,5114), new RSTile(3655,5113), new RSTile(3656,5112), new RSTile(3657,5112), new RSTile(3658,5112), new RSTile(3659,5112), new RSTile(3660,5112), new RSTile(3661,5112), new RSTile(3662,5112), new RSTile(3663,5112), new RSTile(3664,5112), new RSTile(3665,5112), new RSTile(3666,5112), new RSTile(3667,5112), new RSTile(3668,5112), new RSTile(3669,5112), new RSTile(3670,5111), new RSTile(3671,5110), new RSTile(3672,5109), new RSTile(3673,5108), new RSTile(3674,5107), new RSTile(3675,5106), new RSTile(3676,5106), new RSTile(3677,5106), new RSTile(3678,5106), new RSTile(3679,5106), new RSTile(3680,5106), new RSTile(3681,5106), new RSTile(3682,5106), new RSTile(3683,5106), new RSTile(3684,5106), new RSTile(3685,5106), new RSTile(3686,5106), new RSTile(3687,5106), new RSTile(3688,5106), new RSTile(3689,5106)};
+		rock1ToRock2 = new RSTile[] { new RSTile(3669,5076), new RSTile(3669,5077), new RSTile(3669,5078), new RSTile(3669,5079), new RSTile(3668,5080), new RSTile(3668,5081), new RSTile(3667,5081), new RSTile(3666,5082), new RSTile(3666,5083), new RSTile(3665,5083), new RSTile(3665,5084), new RSTile(3664,5085), new RSTile(3663,5086), new RSTile(3662,5086), new RSTile(3661,5086), new RSTile(3660,5086), new RSTile(3659,5086), new RSTile(3658,5087), new RSTile(3657,5088), new RSTile(3656,5089), new RSTile(3655,5089), new RSTile(3654,5089), new RSTile(3653,5089), new RSTile(3652,5089), new RSTile(3651,5089), new RSTile(3650,5089), new RSTile(3649,5089), new RSTile(3648,5089), new RSTile(3647,5090), new RSTile(3646,5091), new RSTile(3645,5092), new RSTile(3644,5093), new RSTile(3644,5094), new RSTile(3643,5094), new RSTile(3642,5095), new RSTile(3639,5093)};
+		rock1ToRock3 = new RSTile[] { new RSTile(3665,5089), new RSTile(3666,5089), new RSTile(3667,5089), new RSTile(3668,5090), new RSTile(3669,5091), new RSTile(3670,5092), new RSTile(3671,5093), new RSTile(3672,5094), new RSTile(3673,5095), new RSTile(3674,5095), new RSTile(3675,5096), new RSTile(3676,5097), new RSTile(3677,5098), new RSTile(3678,5099), new RSTile(3679,5100), new RSTile(3680,5101), new RSTile(3681,5102), new RSTile(3682,5103), new RSTile(3683,5104), new RSTile(3684,5105), new RSTile(3685,5106), new RSTile(3686,5106), new RSTile(3687,5106), new RSTile(3688,5106), new RSTile(3689,5106) };
+		rock2ToRock3 = new RSTile[] { new RSTile(3675,5096), new RSTile(3676,5097), new RSTile(3677,5098), new RSTile(3678,5099), new RSTile(3679,5100), new RSTile(3680,5101), new RSTile(3681,5102), new RSTile(3682,5103), new RSTile(3683,5104), new RSTile(3684,5105), new RSTile(3685,5106), new RSTile(3686,5106), new RSTile(3687,5106), new RSTile(3688,5106), new RSTile(3689,5106)};
+		rockOneTile = new RSTile(3668, 5076);
+		rockTwoTile = new RSTile(3638, 5095);
+		rockThreeTile = new RSTile(3678, 5161);
+		status = "Determining action...";
+			if(atRock2()) {
+                		currentRockNumber = 2;
+				hasBanked = true;
+                		return true;
+            		}else if (atRock1() || atBank()) {
+                		currentRockNumber = 1;
+                		return true;
+            			}else{
+                		currentRockNumber = 1;
+				hasBanked = true;
+				return true;
+            		}
+	}else if (numberOfRocks.equals("3 Coal Rocks")) {
+		coalMessage = "Retrieving price of coal...";
+		priceMessage = "Price retrieved. " +coalPrice+ " per ore. Script is now starting.";
+		orePrice = grandExchange.getMarketPrice(453);
+        	log(coalMessage);
+		log(priceMessage);
+		oreTag = "Coal mined: ";
+		rockID = 5999;
+		deadRockID = 5990;
+		oreID = 453;
+		twoRocks = false;
+		rock1SafeSpotN = new RSTile(3666,5092);
+		rock1SafeSpotW = new RSTile(3663,5091);
+		rock1SafeSpotS = new RSTile(3665,5089);
+		rock1SafeSpotE = new RSTile(3667,5090);
+		rock2SafeSpotN = new RSTile(3674,5101);
+		rock2SafeSpotW = new RSTile(3673,5099);
+		rock2SafeSpotS = new RSTile(3675,5097);
+		rock2SafeSpotE = new RSTile(3676,5099);
+		rock3SafeSpotN = new RSTile(3689,5106);
+		rock3SafeSpotW = new RSTile(3689,5106);
+		rock3SafeSpotS = new RSTile(3689,5106);
+		rock3SafeSpotE = new RSTile(3689,5106);
+		rockOneArea = new RSArea(new RSTile(3661, 5088), new RSTile(3669, 5093));
+		rockTwoArea = new RSArea(new RSTile(3671, 5095), new RSTile(3677, 5103));
+		rockThreeArea = new RSArea(new RSTile(3685, 5103), new RSTile(3690, 5110));
+		bankToRock1 = new RSTile[] { new RSTile(3654,5113), new RSTile(3655,5113), new RSTile(3656,5113), new RSTile(3657,5112), new RSTile(3657,5111), new RSTile(3657,5110), new RSTile(3657,5109), new RSTile(3657,5108), new RSTile(3657,5107), new RSTile(3657,5106), new RSTile(3657,5105), new RSTile(3657,5104), new RSTile(3657,5103), new RSTile(3658,5102), new RSTile(3659,5101), new RSTile(3660,5100), new RSTile(3661,5099), new RSTile(3661,5098), new RSTile(3661,5097), new RSTile(3661,5096), new RSTile(3661,5095), new RSTile(3661,5094), new RSTile(3662,5093), new RSTile(3662,5092), new RSTile(3662,5091), new RSTile(3662,5090), new RSTile(3662,5089), new RSTile(3663,5089), new RSTile(3664,5089), new RSTile(3665,5089)};
+		bankToRock2 = new RSTile[] { new RSTile(3654,5113), new RSTile(3655,5113), new RSTile(3656,5113), new RSTile(3657,5112), new RSTile(3657,5111), new RSTile(3657,5110), new RSTile(3657,5109), new RSTile(3657,5108), new RSTile(3657,5107), new RSTile(3657,5106), new RSTile(3657,5105), new RSTile(3657,5104), new RSTile(3657,5103), new RSTile(3658,5102), new RSTile(3659,5101), new RSTile(3660,5100), new RSTile(3661,5099), new RSTile(3661,5098), new RSTile(3661,5097), new RSTile(3661,5096), new RSTile(3661,5095), new RSTile(3661,5094), new RSTile(3662,5094), new RSTile(3663,5094), new RSTile(3664,5094), new RSTile(3665,5094), new RSTile(3666,5094), new RSTile(3667,5094), new RSTile(3668,5094), new RSTile(3669,5094), new RSTile(3670,5094), new RSTile(3671,5095), new RSTile(3672,5096), new RSTile(3673,5097), new RSTile(3673,5098) };
+		bankToRock3 = new RSTile[] {  new RSTile(3654,5114), new RSTile(3655,5113), new RSTile(3656,5112), new RSTile(3657,5112), new RSTile(3658,5112), new RSTile(3659,5112), new RSTile(3660,5112), new RSTile(3661,5112), new RSTile(3662,5112), new RSTile(3663,5112), new RSTile(3664,5112), new RSTile(3665,5112), new RSTile(3666,5112), new RSTile(3667,5112), new RSTile(3668,5112), new RSTile(3669,5112), new RSTile(3670,5111), new RSTile(3671,5110), new RSTile(3672,5109), new RSTile(3673,5108), new RSTile(3674,5107), new RSTile(3675,5106), new RSTile(3676,5106), new RSTile(3677,5106), new RSTile(3678,5106), new RSTile(3679,5106), new RSTile(3680,5106), new RSTile(3681,5106), new RSTile(3682,5106), new RSTile(3683,5106), new RSTile(3684,5106), new RSTile(3685,5106), new RSTile(3686,5106), new RSTile(3687,5106), new RSTile(3688,5106), new RSTile(3689,5106)};
+		rock1ToRock2 = new RSTile[] { new RSTile(3665,5089), new RSTile(3666,5089), new RSTile(3667,5089), new RSTile(3668,5090), new RSTile(3669,5091), new RSTile(3670,5092), new RSTile(3671,5093), new RSTile(3672,5094), new RSTile(3673,5095), new RSTile(3673,5096), new RSTile(3673,5097), new RSTile(3673,5098), new RSTile(3674,5099) };
+		rock1ToRock3 = new RSTile[] { new RSTile(3665,5089), new RSTile(3666,5089), new RSTile(3667,5089), new RSTile(3668,5090), new RSTile(3669,5091), new RSTile(3670,5092), new RSTile(3671,5093), new RSTile(3672,5094), new RSTile(3673,5095), new RSTile(3674,5095), new RSTile(3675,5096), new RSTile(3676,5097), new RSTile(3677,5098), new RSTile(3678,5099), new RSTile(3679,5100), new RSTile(3680,5101), new RSTile(3681,5102), new RSTile(3682,5103), new RSTile(3683,5104), new RSTile(3684,5105), new RSTile(3685,5106), new RSTile(3686,5106), new RSTile(3687,5106), new RSTile(3688,5106), new RSTile(3689,5106) };
+		rock2ToRock3 = new RSTile[] { new RSTile(3675,5096), new RSTile(3676,5097), new RSTile(3677,5098), new RSTile(3678,5099), new RSTile(3679,5100), new RSTile(3680,5101), new RSTile(3681,5102), new RSTile(3682,5103), new RSTile(3683,5104), new RSTile(3684,5105), new RSTile(3685,5106), new RSTile(3686,5106), new RSTile(3687,5106), new RSTile(3688,5106), new RSTile(3689,5106)};
+		rockOneTile = new RSTile(3665, 5091);
+		rockTwoTile = new RSTile(3674, 5099);
+		rockThreeTile = new RSTile(3688, 5107);
+		status = "Determining action...";
+			if (atRock3()) {
+                		currentRockNumber = 3;
+				hasBanked = true;
+                		return true;
+            		}else if (atRock2()) {
+                		currentRockNumber = 2;
+				hasBanked = true;
+                		return true;
+            		}else if (atRock1() || atBank()) {
+                		currentRockNumber = 1;
+                		return true;
+            			}else{
+                		currentRockNumber = 1;
+				hasBanked = true;
+				return true;
+            		}
+	}
+	return !exitGUI;
+	}
+
+	public String getAuthor() {
+		return "Richard";
+	}
+
+	public String getName() {
+		return "LRCMiner";
+	}
+	public String getScriptCategory() {
+		return "Mining";
+	}
+
+	public double getVersion() {
+		return 1.61;
+	}
+	private boolean atFalador(){
+        	return faladorArea.contains(getMyPlayer().getLocation());
+   	} 
+	private boolean atRockCavern(){
+        	return miningArea.contains(getMyPlayer().getLocation());
+   	}  
+	private boolean atBank(){
+        	return bankArea.contains(getMyPlayer().getLocation());
+   	}  
+	private boolean atRock1(){
+        	return rockOneArea.contains(getMyPlayer().getLocation());
+   	}  
+	private boolean atRock2(){
+        	return rockTwoArea.contains(getMyPlayer().getLocation());
+   	}  
+	private boolean atRock3(){
+        	return rockThreeArea.contains(getMyPlayer().getLocation());
+   	}  
+	private boolean atLumbridge(){
+        	return lumbridgeArea.contains(getMyPlayer().getLocation());
+   	} 
+	private boolean atCabinArea(){
+        	return cabinArea.contains(getMyPlayer().getLocation());
+   	} 
+	private boolean atMine(){
+        	return mineArea.contains(getMyPlayer().getLocation());
+   	}
+	private Image getImage(String imageName) {
+		try {
+		File image = new File(GlobalConfiguration.Paths.getScriptsDirectory() + "/" + imageName);
+            		if(image.exists())
+                	return ImageIO.read(image.toURI().toURL());
+            	Image URLImage = ImageIO.read(new URL("http://scripts.site90.net/Scripts/LRCMiner/" + imageName));
+            	if(URLImage != null) {
+                ImageIO.write((RenderedImage)URLImage, "JPG", image);
+                return URLImage;
+            	}
+        	} catch(IOException e) {
+			log("Failed to retrieve picture(s).");
+        }
+        return null;
+	}
+
+	private class ChatResponder extends Thread {
+		boolean run = true;
+		@Override
+		public void run() {
+			while (getChatMessages() == null) {
+				try {
+					Thread.sleep(20);
+				} catch (Exception ignored) {}
+			}
+			while(run) {
+				try{
+					String message = getChatMessages().toLowerCase();
+					if (message != null && !message.equals(previousMessage)) {
+						if (isUsingRemote == true){
+							String[] entireMessage = message.split("<col=");
+							if (entireMessage[0].toLowerCase().contains(remoteName)){
+								if (entireMessage[1].toLowerCase().contains(logoutMessage)){
+									log("Your Character has talked to you with your logout message.");
+										doLogout = true;
+								}else{
+									log("Your Character has talked to you, but without logout message.");
+								}
+							}
+						previousMessage = message;
+						}
+					}
+				}catch (Exception e){}
+			}
+		}
+	}
+	private void drawPathsAndTiles(final Graphics g, final RSTile rsTile, final Color color, String Message)throws Exception {
+		final Point p = calc.tileToScreen(rsTile);
+		final Point pn = calc.tileToScreen(new RSTile(rsTile.getX(), rsTile.getY()), 0, 0, 0);
+		final Point px = calc.tileToScreen(new RSTile(rsTile.getX() + 1, rsTile.getY()), 0, 0, 0);
+		final Point py = calc.tileToScreen(new RSTile(rsTile.getX(), rsTile.getY() + 1), 0, 0, 0);
+		final Point pxy = calc.tileToScreen(new RSTile(rsTile.getX() + 1, rsTile.getY() + 1), 0, 0, 0);
+		final Point[] points = { p, pn, px, py, pxy };
+		for (final Point point : points) {
+			if (!calc.pointOnScreen(point)) {
+			return;
+			}
+		}
+		Point pointOnMinimap = calc.tileToMinimap(rsTile);
+		g.setColor(color);
+
+		if (pointOnMinimap != null) {
+		g.fillOval((int) pointOnMinimap.getX() - 2, (int) pointOnMinimap.getY() - 2, 4, 4);
+		}
+		g.drawPolygon(new int[] { py.x, pxy.x, px.x, pn.x }, new int[] { py.y,pxy.y, px.y, pn.y }, 4);
+		g.drawString(Message, p.x - 30, p.y - 40);
+	}
+
+private class antiBan extends Thread {
+		final char[] upDownRandom = new char[] { KeyEvent.VK_DOWN, KeyEvent.VK_UP };
+		final char[] leftRightRandom = new char[] { KeyEvent.VK_LEFT,KeyEvent.VK_RIGHT };
+		final char[] allKeys = new char[] { KeyEvent.VK_LEFT,KeyEvent.VK_RIGHT, KeyEvent.VK_UP,KeyEvent.VK_UP };
+		final int random1 = random(0, 2);
+		final int random2 = random(0, 2);
+		final int random3 = random(0, 4);
+		int antiBanRandomValue = random(0,15);
+		private void mouseMovementAntiBan(){
+			int mouseRandomValue = random(1,2);
+				try{
+				if(mouseRandomValue == 1){
+					mouse.moveRandomly(200);
+				}
+				else if(mouseRandomValue == 2){
+					mouse.moveOffScreen();
+				}
+				}catch (Exception e){}
+		}
+
+		private void cameraMovementAntiBan(){
+			try{
+			if(random(0,1) <= 1){
+				keyboard.pressKey(upDownRandom[random1]);
+				sleep(random(600,800));
+	                    	keyboard.pressKey(leftRightRandom[random2]);
+				sleep(random(600,800));
+				keyboard.releaseKey(leftRightRandom[random2]);
+				sleep(random(100,200));
+				keyboard.releaseKey(upDownRandom[random1]);
+			}else{
+				keyboard.pressKey(allKeys[random3]);
+				sleep(random(800,1000));
+				keyboard.releaseKey(allKeys[random3]);
+			}
+			}catch (Exception e){}
+		}
+
+		private void checkSkillAntiBan(){
+			try{
+			if(random(5,6) == 6 && getMyPlayer().getAnimation() != -1){
+				if(game.getCurrentTab() != Game.TAB_STATS){
+					game.openTab(Game.TAB_STATS);
+					sleep(random(600,800));
+					Point checkMiningSkill = new Point(interfaces.get(320).getComponent(3).getAbsoluteX()+20,interfaces.get(320).getComponent(3).getAbsoluteY()+10);
+					mouse.move(checkMiningSkill,5,5);
+					sleep(random(600,1000));
+				}
+			}
+			}catch (Exception e){}
+		}
+
+		private void clickPlayerAntiBan(){
+			if(random(1,2) == 2){
+				try{
+				RSPlayer player = players.getNearest(Players.ALL_FILTER);
+				if (player != null) {
+					mouse.move(player.getScreenLocation(), 5, 5);
+					sleep(random(400, 500));
+					mouse.click(false);
+					sleep(random(750, 800));
+					mouse.move(random(10, 450), random(10, 495));
+				}
+				}catch (Exception e){}
+			}
+		}
+
+
+		private void checkFriendsAntiBan(){
+			try{
+			if(game.getCurrentTab() != Game.TAB_FRIENDS){
+				if(random(1,2) == 1){
+					game.openTab(Game.TAB_FRIENDS);
+					sleep(random(1000,2000));
+				}
+			}
+			}catch (Exception e){}
+		}
+
+        	@Override
+        	public void run() {
+			try{
+				if((System.currentTimeMillis() - preformedAntiban) >= (random(15, 20) * random(600,900)) && !getMyPlayer().isMoving() && !getMyPlayer().isInCombat()){	
+					findAntiBan();
+					preformedAntiban = System.currentTimeMillis();
+            			}
+			}catch (Exception e){}
+		}
+
+        	private void findAntiBan() {
+			antiBanRandomValue = random(0,9);
+			if(antiBanRandomValue < 5){
+				mouseMovementAntiBan();
+			}else if(antiBanRandomValue == 6){
+				cameraMovementAntiBan();	
+			}else if(antiBanRandomValue == 7){
+				checkSkillAntiBan();
+			}else if(antiBanRandomValue == 8){
+				clickPlayerAntiBan();
+			}else if(antiBanRandomValue == 9){
+				checkFriendsAntiBan();
+			}
+            	}
+        }
+	public void logMeOutAndStop(){
+		if(doLogout == true){
+			if(game.isLoggedIn() && logToLoginScreen == true){
+				env.disbleRandoms();
+				log("Auto-login Disabled");
+				game.logout(false);
+				sleep(random(3000,5000));
+				chatRespond.run = false;
+				stopScript();
+			}else{
+				env.disbleRandoms();
+				log("Auto-login Disabled");
+				game.logout(true);
+				chatRespond.run = false;
+				stopScript();
+			}
+		}
+	}
+	private void toRope(){
+		RSObject entrancePortal = objects.getNearest(entranceID);
+		entrancePortalTile = entrancePortal.getLocation();
+		if(entrancePortal != null && entrancePortal.isOnScreen()) {
+			if(tiles.doAction(entrancePortalTile, "Climb")){
+				waitForLocation(getMyPlayer().getLocation(), random(2000,3000));
+				hasBanked = true;
+				return;
+			}
+		}
+    	}    	
+
+
+	private void mineRock(){
+		RSObject rockToMine = objects.getNearest(rockID);
+		objectTile = rockToMine.getLocation();
+		Rock = objects.getTopAt(objectTile, 1);
+		int mouseOffScreen = random(0,25);
+		try{
+			if(getMyPlayer().getAnimation() != -1){
+				status = "Mining rock";
+				numberOfInvenItems = inventory.getCount();
+				checkedRock = false;
+				walkedToSafeSpot = false;
+			}
+    		    	if(!status.equals("Mining rock")){
+				if(!rockToMine.isOnScreen() && !getMyPlayer().isMoving()){
+					camera.turnToObject(rockToMine);
+					sleep(random(300,400));
+				}
+				if(getMyPlayer().getAnimation() == -1 && !inventory.isFull() && rockToMine.isOnScreen()){
+					if (interfaces.get(266).getComponent(1).isValid() && interfaces.get(266).getComponent(23).isValid()){
+						log(graveMessage1);
+						RSComponent closeGraveMessage = interfaces.get(266).getComponent(1);
+						closeGraveMessage.doClick(true);
+						log(graveMessage2);
+					}
+					if(Rock.getID() == rockID || rockToMine.isOnScreen()){
+						if(tiles.doAction(objectTile, "Mine Mineral deposit") || rockToMine.doAction("Mine Mineral deposit")){
+							waitAnimation(random(1500,2000));
+							return;
+						}
+					}
+					if (inventory.isFull()){
+						status = "Walking to bank";
+					}
+				}
+				if(mouseOffScreen == 4){
+					mouse.moveOffScreen();
+					return;
+				}
+			}
+			if(getMyPlayer().getAnimation() == -1 && status.equals("Mining rock")){
+				waitAnimation(random(2000,3000));
+				sleep(random(100,200));
+				if(getMyPlayer().getAnimation() == -1){
+					status = "AFK-ed?";
+				}
+			}
+		}catch (Exception e) {
+			log.severe("Please report this! Error code: 102");
+		}
+	}
+
+	private void reEquip(){
+		sleep(random(1000,2000));
+		if(equip1 != 0){
+		inventory.getItem(equip1).doAction("w");
+		sleep(random(500,800));
+		}
+		if(equip2 != 0){
+		inventory.getItem(equip2).doAction("w");
+		sleep(random(500,800));
+		}
+	}
+
+	private void eatFood(){
+		foodCount = inventory.getCount(foodID);
+		if(foodCount != 0){
+			inventory.getItem(foodID).doAction("Eat");
+			status = "Eating";
+		}
+		else if(foodCount == 0){
+			isEating = false;
+		}
+	}		
+
+	private void reEquipPick(){
+		inventory.getItem(reEquipID).doAction("Wield");
+		sleep(random(500,800));
+	}
+
+	private void energyCheck() {
+		if (walking.getEnergy() >= turnOnRunAt) {
+			walking.setRun(true);
+			sleep(random(600,800));
+		}
+	}
+
+	private String getChatMessages() {
+		try {
+			String text = null;
+			for (int x = 280; x >= 180; x--){
+				if (interfaces.get(137).getComponent(x).getText() != null) {
+					if (interfaces.get(137).getComponent(x).getText().contains("<col=")) {
+						text = interfaces.get(137).getComponent(x).getText();
+						break;
+					}
+				}
+			}
+			return text;
+		} catch (Exception e){}
+		return null;
+	}
+
+	private int prayerCheck() {
+		return Integer.parseInt(interfaces.get(749).getComponent(4).getText());
+	}
+
+	private int summoningPointCheck() {
+		return Integer.parseInt(interfaces.get(747).getComponent(5).getText());
+	}
+
+	private boolean quickPrayerCheck() {
+		if(interfaces.get(749).getComponent(2).getBackgroundColor() == 1209){
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	private void renewPoints() {
+		 while(atRockCavern()){
+			RSObject ropeUp = objects.getNearest(ropeUpID);
+			walkPath(bankToRope, false);
+			if(ropeUp.isOnScreen()){
+				ropeUp.doAction("Climb");
+				waitForLocation(getMyPlayer().getLocation(), random(2000,3000));
+				sleep(random(1000,1500));
+			}
+		}
+		while(atMine()){
+			RSObject Obelisk = objects.getNearest(obeliskID);
+			obeliskTile = Obelisk.getLocation();
+			while(summoningPointCheck() <= restoreSummoningAt){
+				if(Obelisk.isOnScreen()){
+					tiles.doAction(obeliskTile, "Renew-points");
+					sleep(random(1000,1500));
+					}else{
+					walkPath(ropeToObelisk, false);
+					}
+			}
+			while(summoningPointCheck() > restoreSummoningAt){
+				RSObject entrancePortal = objects.getNearest(entranceID);
+				entrancePortalTile = entrancePortal.getLocation();
+				if(entrancePortal.isOnScreen()) {
+					tiles.doAction(entrancePortalTile, "Climb");
+					waitForLocation(getMyPlayer().getLocation(), random(2000,3000));
+					sleep(random(1000,1500));
+					}else{
+					walkPath(ropeToObelisk, true);
+					}
+			}
+		}	
+	}
+
+	private void summonFamiliar() {
+		if(needToRenewFamiliar == true){
+			inventory.getItem(restoreSummoningPouchID).doAction("Summon");
+			sleep(random(2000,3000));
+			needToRenewFamiliar = false;
+		}
+		if(!summoning.isFamiliarSummoned()){
+			inventory.getItem(restoreSummoningPouchID).doAction("Summon");
+			sleep(random(2000,3000));
+			needToRenewFamiliar = false;
+		}
+	}
+
+
+	private void bankFamiliar() {
+		 RSNPC myFamiliar = npcs.getNearest(familiarID);
+			while(bankedFamiliar == false){
+				while(!interfaces.get(671).isValid()){
+					myFamiliar.doAction("Store");
+					waitForInterface(interfaces.get(655), random(1500,2500));
+				}
+				while(interfaces.get(671).isValid()){
+					if(inventory.getCount(oreID) != 0){
+						inventory.getItem(oreID).doAction("Store-All");
+						sleep(random(600,800));
+					}
+					else if(inventory.getCount(oreID) == 0){
+						RSComponent closeFamiliarBank = interfaces.get(671).getComponent(13);
+						closeFamiliarBank.doClick();
+						bankedFamiliar = true;
+					}
+				}
+			}
+	}
+
+
+	private void openBank(){
+		RSObject cart = objects.getNearest(depositCart);
+		cartTile = cart.getLocation();
+		objectTile = cart.getLocation();
+			if(!calc.tileOnScreen(cartTile) && !getMyPlayer().isMoving()){
+				camera.turnToObject(cart);
+				sleep(random(300,400));
+			}
+			if(!bank.isDepositOpen()) {
+				if(cart.doAction("Deposit") || tiles.doAction(cartTile, "Deposit"))
+				waitForInterface(interfaces.get(11), random(2000,2500));
+			}
+			sleep(random(500,600));
+	}
+
+
+	private void depositItems(){
+			while(bank.getBoxCount(oreID) > 5){
+				if(isQuickDeposit){
+					bank.depositAll();
+					waitDepositItem(oreID, random(1500,2000));
+				}else if(!isQuickDeposit){
+					bank.deposit(oreID, 0);
+					waitDepositItem(oreID, random(1500,2000));
+				}
+				else if(isBankingFamiliar){
+					if(bankedFamiliar){
+						bank.depositAllFamiliar();
+						bankedFamiliar = false;
+				}else if(!isBankingFamiliar){
+						bankedFamiliar = true;
+					}
+				}
+			}
+			sleep(random(300,400));
+			if(isUsingFamiliar == true && summoningPointCheck() <= restoreSummoningAt){
+				numberOfInvenItems = bank.getBoxCount();
+				hasBanked = true;
+				renewPoints();	
+			}
+			else if(bank.getBoxCount(oreID) < 5){
+				hasBanked = true;
+				numberOfInvenItems = bank.getBoxCount();
+				status = "Walking back to rock "+currentRockNumber;
+			}
+	}
+
+
+
+	private void walkPath(final RSTile[] path, boolean reverse) {
+		try{
+		RSTilePath actualPath;
+			if(!reverse){
+				actualPath = walking.newTilePath(path);
+				actualPath.randomize(2, 2);
+			}else{
+				actualPath = walking.newTilePath(path);
+				actualPath.reverse();
+				actualPath.randomize(1, 1);
+			}
+		RSTile endPath = actualPath.getEnd();
+		if(status.equals("Walking from Lumbridge to House") || status.equals("Walking from stairs to cavern") || status.equals("Walking from Falador Castle to House")){
+			if(!(calc.distanceTo(endPath) < 5)) {
+				energyCheck();
+				if(!getMyPlayer().isMoving() || (walking.getDestination() != null && (calc.distanceTo(walking.getDestination()) <= random(7,9) && calc.distanceBetween(walking.getDestination(), endPath) > 2))){
+					if(!actualPath.traverse())
+					actualPath.traverse();
+				}
+			}
+		}else{
+			while(!(calc.distanceTo(endPath) < 4)) {
+				energyCheck();
+				if(!getMyPlayer().isMoving() || (walking.getDestination() != null && (calc.distanceTo(walking.getDestination()) <= random(7,9) && calc.distanceBetween(walking.getDestination(), endPath) > 2))){
+					if(!actualPath.traverse())
+						actualPath.traverse();
+					if(walking.getDestination() != null && calc.distanceBetween(walking.getDestination(), endPath) <= 2)
+						break;
+				}
+				if(!atRockCavern() && path != castleToHouse && path != lumbridgeToHouse && path != stairsToRope){
+					break;
+				}
+			}
+		}
+		}catch (Exception e) {
+			log.severe("Please report this! Error code: 209");
+        	}
+	}
+
+
+    	private void checkOtherRock() {
+		RSObject Rock = objects.getNearest(rockID);
+		RSObject deadRock = objects.getNearest(deadRockID);
+			if(deadRock.isOnScreen() && !twoRocks && checkOtherRock == false && checkedRock == false){
+		        	if(currentRockNumber == 1 && isRockDead2 == false){
+					previousRockNumber = currentRockNumber;
+					currentRockNumber = 2;
+					status = "Walking from Rock 1 to Rock 2";
+					undoStatus = "Walking from Rock 2 to Rock 1";
+					checkOtherRock = true;
+					checkedRock = true;	
+		        	}
+				else if(currentRockNumber == 1 && isRockDead3 == false){
+					previousRockNumber = currentRockNumber;
+					currentRockNumber = 3;
+					status = "Walking from Rock 1 to Rock 3";
+					undoStatus = "Walking from Rock 3 to Rock 1";
+					checkOtherRock = true;
+					checkedRock = true;	
+				}
+				else if(currentRockNumber == 2 && isRockDead1 == false){
+					previousRockNumber = currentRockNumber;
+					currentRockNumber = 1;
+					status = "Walking from Rock 2 to Rock 1";
+					undoStatus = "Walking from Rock 1 to Rock 2";
+					checkOtherRock = true;
+					checkedRock = true;	
+				}
+				else if(currentRockNumber == 2 && isRockDead3 == false){
+					previousRockNumber = currentRockNumber;
+					currentRockNumber = 3;
+					status = "Walking from Rock 2 to Rock 3";
+					undoStatus = "Walking from Rock 3 to Rock 2";
+					checkOtherRock = true;
+					checkedRock = true;	
+				}
+				else if(currentRockNumber == 3 && isRockDead1 == false){
+					previousRockNumber = currentRockNumber;
+					currentRockNumber = 1;
+					status = "Walking from Rock 3 to Rock 1";
+					undoStatus = "Walking from Rock 1 to Rock 3";
+					checkOtherRock = true;
+					checkedRock = true;	
+				}
+				else if(currentRockNumber == 2 && isRockDead2 == false){
+					previousRockNumber = currentRockNumber;
+					currentRockNumber = 2;
+					status = "Walking from Rock 3 to Rock 2";
+					undoStatus = "Walking from Rock 2 to Rock 3";
+					checkOtherRock = true;
+					checkedRock = true;	
+				}
+		    	}
+	}
+
+	private void justDied(){
+		numberOfInvenItems = inventory.getCount();
+		if(reEquipPickaxe == true){
+			if(inventory.containsOneOf(reEquipID)){
+				reEquipPick();
+			}
+		}
+		if(reEquip == true){
+			if(inventory.containsOneOf(equip1) || inventory.containsOneOf(equip2)){
+				reEquip();
+			}
+		}
+	}
+	private void waitRock(){
+		attackCounts();
+		status = "Waiting for rock to respawn";
+			if(Rock.getID() == deadRockID){
+				waitForRock = true;
+				walkedToSafeSpot = false;
+				checkOtherRock();
+					if(checkOtherRock == true){
+						attackCounts();
+						AntiBan.run();
+						sleep(10);
+					}
+			}else{
+				waitForRock = false;	
+				mineRock();
+			}
+		}
+
+
+
+
+	private void findRock(){
+		if(twoRocks == true){
+			if(currentRockNumber == 1) {
+				if(isRockDead1 == true){
+					currentRockNumber = 2;
+        				status = "Walking from Rock 1 to Rock 2";
+				}
+			}
+			if(currentRockNumber == 2) {
+				if(isRockDead2 == true){
+					currentRockNumber = 1;
+					status = "Walking from Rock 2 to Rock 1";
+				}
+			}
+				
+		}
+		if(!twoRocks){
+			if(currentRockNumber == 1) {
+				if(isRockDead1 == true && isRockDead2 == false){
+					currentRockNumber = 2;
+        				status = "Walking from Rock 1 to Rock 2";
+				}
+				else if(isRockDead1 == true && isRockDead2 == true && isRockDead3 == false) {
+					currentRockNumber = 3;
+        				status = "Walking from Rock 1 to Rock 3";
+   				}
+			}
+			if(currentRockNumber == 2){
+				if(isRockDead1 == true && isRockDead2 == true && isRockDead3 == false) {
+					currentRockNumber = 3;
+        				status = "Walking from Rock 2 to Rock 3";
+   				}
+				else if(isRockDead1 == false && isRockDead2 == true && isRockDead3 == true) {
+					currentRockNumber = 1;
+        				status = "Walking from Rock 2 to Rock 1";
+   				}
+				else if(isRockDead1 == false && isRockDead2 == true && isRockDead3 == false) {
+					currentRockNumber = 3;
+        				status = "Walking from Rock 2 to Rock 3";
+   				}
+			}			
+			if(currentRockNumber == 3){
+				if(isRockDead1 == false && isRockDead2 == true && isRockDead3 == true){
+					currentRockNumber = 1;
+        				status = "Walking from Rock 3 to Rock 1";
+   				}
+				else if(isRockDead1 == true && isRockDead2 == false && isRockDead3 == true){
+					currentRockNumber = 2;
+        				status = "Walking from Rock 3 to Rock 2";
+   				}
+				else if(isRockDead1 == false && isRockDead2 == false && isRockDead3 == true){
+					currentRockNumber = 1;
+        				status = "Walking from Rock 3 to Rock 1";
+   				}
+			}
+		}
+	}
+	private void clickHouse() {
+		RSObject houseDoor = objects.getNearest(doorID);
+		RSObject stairsDown = objects.getNearest(stairsID);
+		stairsTile = stairsDown.getLocation();
+			if(houseDoor != null){
+		        	houseDoor.doAction("Open Door");
+		       		sleep(random(2000,2500));
+		        }
+		tiles.doAction(stairsTile, "Climb-down Stairs");
+		waitForLocation(getMyPlayer().getLocation(), random(1500,2000));
+		sleep(random(200,300));
+		return;
+	}	
+	    
+
+	private void safeSpot(){
+		if(isUsingQuickPrayer == true && prayerCheck() != 0 && quickPrayerCheck()){
+			while(quickPrayerCheck()){
+				interfaces.get(749).getComponent(1).doClick(true);
+				sleep(random(600,800));
+			}
+		}
+		if(!getMyPlayer().isMoving() && walkedToSafeSpot == false){
+			walkToSafeSpot = null;
+			status = "Safespotting";
+			findSafeSpot();
+		}
+		if(getMyPlayer().getLocation() == walkToSafeSpot && walkedToSafeSpot == true){
+			walkedToSafeSpot = false;
+		}
+	}
+
+
+	private void findSafeSpot() {
+		walkToSafeSpot = null;
+		int safeSpotValue;
+		RSTile playerPosition = getMyPlayer().getLocation();
+				if (atRock1()) {
+					safeSpotValue = random(1,3);
+					if(safeSpotValue == 1){
+						walkToSafeSpot = rock1SafeSpotE;
+					}else if(safeSpotValue == 2){
+						walkToSafeSpot = rock1SafeSpotW;
+					}else{
+						walkToSafeSpot = rock1SafeSpotS;
+					}
+				}
+				else if (atRock2()) {
+					safeSpotValue = random(1,4);
+					if(safeSpotValue == 1){
+						walkToSafeSpot = rock2SafeSpotN;
+					}else if(safeSpotValue == 2){
+						walkToSafeSpot = rock2SafeSpotW;
+					}else if(safeSpotValue == 3){
+						walkToSafeSpot = rock2SafeSpotS;
+					}else{
+						walkToSafeSpot = rock2SafeSpotE;
+					}
+				}
+				else if (atRock3()) {
+					safeSpotValue = random(1,2);
+					if(safeSpotValue == 1){
+						walkToSafeSpot = rock3SafeSpotN;
+					}else{
+						walkToSafeSpot = rock3SafeSpotE;
+					}
+				}
+
+				else if (atBank()) {
+     					walkToSafeSpot = null;
+    				}
+
+				if(walkToSafeSpot != playerPosition){
+					if(tiles.doAction(walkToSafeSpot, "Walk Here") || walking.walkTileMM(walkToSafeSpot)){
+						walkedToSafeSpot = true;
+						waitForMovingPlayer(random(1500,2000));
+						sleep(random(200,300));
+						waitForPlayer(random(1500,2000));
+						timesAttacked = 0;
+					}	
+				}else{
+					findSafeSpot();
+				}
+		    }
+
+	private boolean waitForInterface(RSInterface Interface, int delayTime) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < delayTime) {
+			if (Interface.isValid()){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitForPlayer(int delayTime) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < delayTime) {
+			if (!getMyPlayer().isMoving()){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitForMovingPlayer(int delayTime) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < delayTime) {
+			if (getMyPlayer().isMoving()){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitForLocation(RSTile tile, int delayTime) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < delayTime) {
+			if (calc.distanceTo(tile) > 10){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitAnimation(int delayTime) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < delayTime) {
+			if (getMyPlayer().getAnimation() != -1){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitDepositItem(int id, int delayTime) {
+		int itemNumber = bank.getBoxCount(id);
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < delayTime) {
+			if (bank.getBoxCount(id) < itemNumber || bank.getBoxCount(id) == 0){
+					return true;
+			}
+		}
+		return false;
+	}
+
+
+	private void EXPCheck(){
+		if(lastEXP == 0){
+			lastEXP = skills.getCurrentExp(Skills.MINING);
+			lastRecievedEXP = System.currentTimeMillis();
+		}else{
+			if(lastEXP != skills.getCurrentExp(Skills.MINING)){
+				lastEXP = skills.getCurrentExp(Skills.MINING);
+				lastRecievedEXP = System.currentTimeMillis();
+			}
+			if ((System.currentTimeMillis() - lastRecievedEXP )  >= random(780000, 900000)){
+				log("You haven't gained any EXP in the last 13-15 minutes. Now Logging out...");
+				env.disbleRandoms();
+				log("Auto-login Disabled");
+				game.logout(true);
+				log("Stopping script.");
+				stopScript();			
+			}			
+		}
+		
+	}
+
+	private void attackCounts(){
+		if (getMyPlayer().getAnimation() == 424 && !getMyPlayer().isMoving() && timesAttacked == 0) {
+			timesAttacked++;
+		}
+		
+	}
+
+	public int loop() { 
+	try{
+		EXPCheck();
+		mouse.setSpeed(random(6,9));
+		camera.setPitch(true);
+		if(atRockCavern()){
+			attackCounts();
+			if(!bank.isDepositOpen() && inventory.isFull() && !atBank()){
+				if(isPowerMining == false && bankedFamiliar == true){
+					status = "Walking to bank";
+					if(currentRockNumber == 1){
+						hasBanked = false;
+						walkPath(bankToRock1, true); 
+					}else if(currentRockNumber == 2){
+						hasBanked = false;
+						walkPath(bankToRock2, true);
+    					}else if(currentRockNumber == 3){
+						hasBanked = false;
+						walkPath(bankToRock3, true);
+    					}
+				}else if(isPowerMining == true){
+					status = "Dropping all ores";
+					inventory.dropAllExcept(dontDrop);
+				}
+				else if(isBankingFamiliar == true && bankedFamiliar == false){
+					status = "Banking Familiar";
+					bankFamiliar();
+				}
+			}else{
+				if(atBank()){
+					RSObject cart = objects.getNearest(depositCart);
+					cartTile = cart.getLocation();
+					if(!bank.isDepositOpen() && inventory.getCount(oreID) > 5){
+						openBank();
+					}else if(bank.isDepositOpen() && bank.getBoxCount() > 5){
+						depositItems();
+					}else{
+						hasBanked = true;
+						numberOfInvenItems = bank.getBoxCount();
+						status = "Walking back to rock "+currentRockNumber;
+					}
+				}
+			}
+			if(currentRockNumber == 1 && !bank.isDepositOpen() && !inventory.isFull()){
+				Rock = objects.getTopAt(rockOneTile, 1);
+				rockNumberTile = rockOneTile;	
+				if(calc.tileOnScreen(rockNumberTile)){
+					if(waitForRock){
+						if(checkOtherRock && !getMyPlayer().isMoving()){
+							if(Rock.getID() == deadRockID){
+								currentRockNumber = previousRockNumber;
+								checkOtherRock = false;
+								status = undoStatus;
+							}
+							else if(Rock.getID() != deadRockID){
+								previousRockNumber = 1;
+								undoStatus = null;
+								isRockDead1 = false;
+								hasBanked = false;
+								checkOtherRock = false;
+								mineRock();
+							}
+						}else{
+							waitRock();
+						}
+					}
+					else if(!waitForRock){
+						if(Rock.getID() == deadRockID){
+							waitForRock = true;
+							isRockDead2 = false;
+							isRockDead1 = true;
+							isRockDead3 = false;
+							findRock();
+						}else{
+							previousRockNumber = 1;
+							undoStatus = null;
+							isRockDead1 = false;
+							hasBanked = false;
+							checkOtherRock = false;
+							mineRock();
+						}
+					}	
+				}
+				else if(calc.distanceTo(rockNumberTile) > 5  && (atRock2() || atRock3()) && !waitForRock){
+					status = "Got lost? Walking to proper rock";
+					walkPath(walking.findPath(rockNumberTile), false);
+				}
+			}else if(currentRockNumber == 2 && !bank.isDepositOpen() && !inventory.isFull()){
+				Rock = objects.getTopAt(rockTwoTile, 1);
+				rockNumberTile = rockTwoTile;	
+				if(calc.tileOnScreen(rockNumberTile)){
+					if(waitForRock){
+						if(checkOtherRock && !getMyPlayer().isMoving()){
+							if(Rock.getID() == deadRockID){
+								currentRockNumber = previousRockNumber;
+								checkOtherRock = false;
+								status = undoStatus;
+							}
+							else if(Rock.getID() != deadRockID){
+								previousRockNumber = 2;
+								undoStatus = null;
+								isRockDead2 = false;
+								hasBanked = false;
+								checkOtherRock = false;
+								mineRock();
+							}
+						}else{
+							waitRock();
+						}
+					}
+					else if(!waitForRock){
+						if(Rock.getID() == deadRockID){
+							waitForRock = true;
+							isRockDead2 = true;
+							isRockDead1 = false;
+							isRockDead3 = false;
+							findRock();
+						}else{
+							previousRockNumber = 2;
+							undoStatus = null;
+							isRockDead2 = false;
+							hasBanked = false;
+							checkOtherRock = false;
+							mineRock();
+						}
+					}
+				}
+				else if(calc.distanceTo(rockNumberTile) > 5 && (atRock3() || atRock1()) && !waitForRock){
+					status = "Got lost? Walking to proper rock";
+					walkPath(walking.findPath(rockNumberTile), false);
+				}
+			}else if(currentRockNumber == 3 && !bank.isDepositOpen() && !inventory.isFull()){
+				Rock = objects.getTopAt(rockThreeTile, 1);
+				rockNumberTile = rockThreeTile;	
+				if(calc.tileOnScreen(rockNumberTile)){
+					if(waitForRock){
+						if(checkOtherRock && !getMyPlayer().isMoving()){
+							if(Rock.getID() == deadRockID){
+								currentRockNumber = previousRockNumber;
+								checkOtherRock = false;
+								status = undoStatus;
+							}
+							else if(Rock.getID() != deadRockID){
+								previousRockNumber = 3;
+								undoStatus = null;
+								isRockDead2 = false;
+								hasBanked = false;
+								checkOtherRock = false;
+								mineRock();
+							}
+						}else{
+							waitRock();
+						}
+					}
+					else if(!waitForRock){
+						if(Rock.getID() == deadRockID){
+							waitForRock = true;
+							isRockDead3 = true;
+							isRockDead1 = false;
+							isRockDead2 = false;
+							findRock();
+						}else{
+							previousRockNumber = 3;
+							undoStatus = null;
+							isRockDead3 = false;
+							hasBanked = false;
+							checkOtherRock = false;
+							mineRock();
+						}
+					}
+				}
+				else if(calc.distanceTo(rockNumberTile) > 5 && (atRock2() || atRock1()) && !waitForRock){
+					status = "Got lost? Walking to proper rock";
+					walkPath(walking.findPath(rockNumberTile), false);
+				}
+			}
+			if(!getMyPlayer().isInCombat() && !quickPrayerCheck()){
+				while(!quickPrayerCheck()){
+					interfaces.get(749).getComponent(1).doClick(true);
+					sleep(random(800,1000));
+				}
+			}
+			if(timesAttacked >= 1){
+				safeSpot();
+			}
+			if(isEating == true && combat.getLifePoints() <= eatWhenHpBelow){
+				eatFood();
+			}
+			if(!bank.isDepositOpen()){
+				if(inventory.getCount(restoreSummoningPouchID) == 0){
+					if(isUsingFamiliar == true && needToRenewFamiliar == true){
+						log("You have run out of pouches. Summoning function turned off.");
+						restoreSummoningPouchID = 0;
+						isUsingFamiliar = false;
+						familiarID = 0;
+						restoreSummoningAt = 0;
+						familiarName = "None";
+						isBankingFamiliar = false;
+						bankedFamiliar = true;
+					}
+				}
+				else if(inventory.getCount(restoreSummoningPouchID) != 0){
+					if(isUsingFamiliar == true && needToRenewFamiliar == true && summoningPointCheck() > restoreSummoningAt){
+						summonFamiliar();
+					}
+				}
+				if(status.contains("bank")){
+					if((System.currentTimeMillis() - lastRecievedEXP )  >= random(30000, 45000)){
+						log("Failsafed - Walking to bank");
+						status = "Walking to bank";
+						walkPath(walking.findPath(cartTile), false);
+					}
+				}
+			}
+			if(status.contains("Walking ")){
+				if(status.equals("Walking from Rock 1 to Rock 2")){
+					walkPath(rock1ToRock2, false);
+				}else if(status.equals("Walking from Rock 1 to Rock 3")){
+					walkPath(rock1ToRock3, false);
+				}else if(status.equals("Walking from Rock 2 to Rock 1")){
+					walkPath(rock1ToRock2, true);
+				}if(status.equals("Walking from Rock 2 to Rock 3")){
+					walkPath(rock2ToRock3, false);
+				}else if(status.equals("Walking from Rock 3 to Rock 1")){
+					walkPath(rock1ToRock3, true);
+				}else if(status.equals("Walking back to rock 3")){
+					walkPath(bankToRock3, false);
+				}else if(status.equals("Walking back to rock 2")){
+					walkPath(bankToRock2, false);		
+				}else if(status.equals("Walking back to rock 1")){
+					walkPath(bankToRock1, false);
+				}else if(status.equals("Walking from Rock 3 to Rock 2")){
+					walkPath(rock2ToRock3, true);
+				}else if(status.equals("Walking to bank")){
+					if(currentRockNumber == 2){
+						walkPath(bankToRock2, true);
+					}else if(currentRockNumber == 3){
+						walkPath(bankToRock3, true);
+					}else if(currentRockNumber == 1){
+						walkPath(bankToRock1, true);
+					}
+				}
+			}
+			if(status.equals("Mining rock")){
+				AntiBan.run();
+			}
+			if(hasBanked == true){
+				status = "Walking back to rock "+currentRockNumber;
+				hasBanked = false;
+				return 20;
+			}
+		}else{
+			if(atCabinArea()){
+				clickHouse();
+			}
+			else if(atFalador()){
+				justDied();
+				if(!inventory.containsOneOf(equip1) && !inventory.containsOneOf(equip2)){
+					status = "Walking from Falador Castle to House";
+					walkPath(castleToHouse, false);
+				}
+			}else if(atMine()){
+				status = "Walking from stairs to cavern";
+				walkPath(stairsToRope, false);
+				toRope();
+			}else if(atLumbridge()){
+				justDied();
+				if(!inventory.containsOneOf(equip1) && !inventory.containsOneOf(equip2)){
+					status = "Walking from Lumbridge to House";
+					walkPath(lumbridgeToHouse, false);
+				}
+			}
+			if(status.contains("Walking ")){
+				if(status.equals("Walking from Lumbridge to House")){
+					walkPath(lumbridgeToHouse, false);
+				}else if(status.equals("Walking from stairs to cavern")){
+					walkPath(stairsToRope, false);
+				}else if(status.equals("Walking from Falador Castle to House")){
+					walkPath(castleToHouse, false);
+				}
+			}
+		}
+		if(doLogout == true){
+			logMeOutAndStop();
+		}
+		return 50;
+	}catch(Exception e) {
+		return 1;
+	}
+	}
+
+
+
+	public void onFinish() {
+        	log(stopMessage1);
+       		log(stopMessage2);
+        	log(stopMessage3);
+		log("After " + hours + " hours " + nf.format(minutes) + " minutes and " + nf.format(seconds) + " seconds");
+		log("You've mined "+oresMined+ " ores with " +profit+ " and gained " +expGained+" experience");
+		if (remoteLogout.equals("Yes")) {
+			chatRespond.run = false;
+		}
+    	}
+
+    //Paint Details
+
+	//Paint Details
+	private String getFormattedTime(final long timeMillis) {
+        long jmillis = timeMillis;
+        final long seconds2 = jmillis / 1000;
+        final long hours = jmillis / (1000 * 60 * 60);
+        jmillis -= hours * 1000 * 60 * 60;
+        final long minutes = jmillis / (1000 * 60);
+        jmillis -= minutes * 1000 * 60;
+        final long seconds = jmillis / 1000;
+        String hoursString = "";
+        String minutesString = "";
+        String secondsString = seconds + "";
+        String type = "seconds";
+
+        if (minutes > 0) {
+            minutesString = minutes + ":";
+            type = "minutes";
+        } else if (hours > 0 && seconds2 > 0) {
+            minutesString = "0:";
+        }
+        if (hours > 0) {
+            hoursString = hours + ":";
+            type = "hours";
+        }
+        if (minutes < 10 && !type.equals("seconds")) {
+            minutesString = "0" + minutesString;
+        }
+        if (hours < 10 && type.equals("hours")) {
+            hoursString = "0" + hoursString;
+        }
+        if (seconds < 10 && !type.equals("seconds")) {
+            secondsString = "0" + secondsString;
+        }
+
+        if (timeMillis == 1000) {
+            type = "second";
+        } else if (timeMillis == 60000) {
+            type = "minute";
+        } else if (timeMillis == 3600000) {
+            type = "hour";
+        }
+
+        return hoursString + minutesString + secondsString + " " + type;
+    }
+
+
+	@Override
+	public void onRepaint(Graphics g) {
+		if (!game.isLoggedIn())
+			return;
+		try{
+		if (objectTile != null)
+    			drawPathsAndTiles(g, objectTile, new Color(60, 155, 170, 130), "Object: ");
+		}catch(Exception e) {}
+
+		g.setColor(new Color(60, 155, 170, 130));
+		g.drawLine(0, (int) mouse.getLocation().getY(), game.getWidth(), (int) mouse.getLocation().getY());
+		g.drawLine((int) mouse.getLocation().getX(), 0, (int) mouse.getLocation().getX(), game.getHeight()); 
+		if (startLevel == 0) {
+			startXP = skills.getCurrentExp(Skills.MINING);
+			startLevel = skills.getCurrentLevel(Skills.MINING);
+		}
+
+		profit = orePrice*oresMined;
+		currentLvl = skills.getCurrentLevel(Skills.MINING);
+		levelGained = currentLvl - startLevel;
+		XPToLevel = skills.getExpToNextLevel(Skills.MINING);
+		percentTillLevel = skills.getPercentToNextLevel(Skills.MINING);
+		currentXP = skills.getCurrentExp(Skills.MINING);
+		final long XPgained = currentXP - startXP;
+		expGained = XPgained;
+		seconds = 0;
+		minutes = 0;
+		hours = 0;
+		Font font;
+		nf = NumberFormat.getInstance();
+		nf.setMinimumIntegerDigits(2);
+		final long runTime = System.currentTimeMillis() - startTime;
+		seconds = runTime / 1000;
+		float profitPerSecond = 0;
+		profitPerSecond = ((float) profit)/(float)(seconds + (minutes*60) + (hours*60*60)); 
+		float profitPerMin = profitPerSecond * 60;
+		float profitPerHour = profitPerMin * 60;
+
+
+		if ( seconds >= 60 ) {
+			minutes = seconds / 60;
+			seconds -= (minutes * 60);
+		}
+		if ( minutes >= 60 ) {
+			hours = minutes / 60;
+			minutes -= (hours * 60);
+		}
+		
+		if ((runTime / 1000) > 0) 
+		{
+			xpPerHour = (int) ((3600000.0 / (double) runTime) * XPgained);
+		}
+
+			//Borders
+			g.setColor(Color.WHITE);
+			g.drawRoundRect(4, 4, 70, 20, 10, 10);
+			g.drawRoundRect(75, 4, 70, 20, 10, 10);
+			g.drawRoundRect(146, 4, 70, 20, 10, 10);
+			g.drawRoundRect(217, 4, 70, 20, 10, 10);
+			
+			// Backgrounds
+                        g.setColor(new Color(0, 0, 0, 130));
+			g.fillRoundRect(4, 4, 70, 20, 10, 10);
+			g.fillRoundRect(75, 4, 70, 20, 10, 10);
+			g.fillRoundRect(146, 4, 70, 20, 10, 10);
+			g.fillRoundRect(217, 4, 70, 20, 10, 10);
+
+
+
+			//Drawings
+			g.setColor(Color.white);
+			g.setFont(new Font("Calibri", Font.BOLD, 12));
+			g.drawString("General", 10, 22);
+			g.drawString("Economy", 81, 22);
+			g.drawString("Experience", 152, 22);
+			g.drawString("Hide Paint", 223, 22);
+
+ 		if(showPaint == true) {
+				g.setColor(Color.WHITE);
+				g.drawRoundRect(4, 25, 283, 110, 10, 10);
+				g.setColor(new Color(0, 0, 0, 130));
+				g.fillRoundRect(4, 25, 283, 110, 10, 10);
+                	if(showPaintID == 1){
+				g.setColor(Color.white);
+				g.setFont(new Font("Chalkduster", Font.BOLD, 11));
+				g.drawString(""  +Title1, 40, 40);
+				g.drawString("" + Title2, 40, 55);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString("Status: " + status, 15, 127);
+				g.drawString("Time running: " + hours + ":" + nf.format(minutes) + ":" + nf.format(seconds), 15, 75);
+				g.drawString("Current Rock Number: " + currentRockNumber, 15, 88);
+				if (isQuickDeposit == false) {
+					g.drawString("Quick Depositing: No ", 15, 101);
+					} else {
+					g.drawString("Quick Depositing: Yes ", 15, 101);
+				}				
+				if (isPowerMining == false) {
+					g.drawString("Powermining: No ", 15, 114);
+					} else {
+					g.drawString("Powermining: Yes ", 15, 114);
+				}				
+				if (isEating == false) {
+					g.drawString("Eating: No ", 175, 75);
+					} else {
+					g.drawString("Eating " + foodName, 175, 75);
+				}				
+				if (isUsingFamiliar == false) {
+					g.drawString("Using familiar: No ", 175, 88);
+					} else {
+					g.drawString("Using " + familiarName, 175, 88);
+				}				
+				if (isUsingQuickPrayer == false) {
+					g.drawString("Quick Prayer: No ", 175, 101);
+					} else {
+					g.drawString("Quick Prayer: Yes", 175, 101);
+				}
+				g.drawString("Deaths: " + deaths, 175, 114);
+			}
+                	if(showPaintID == 2){
+				g.setColor(Color.white);
+				g.setFont(new Font("Chalkduster", Font.BOLD, 11));
+				g.drawString(""  +Title1, 40, 40);
+				g.drawString("" + Title2, 40, 55);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString(oreTag + " " + oresMined, 15, 75);
+				g.drawString("Price of each ore: " + orePrice, 15, 88);
+				g.drawString("Total Profit: " + profit, 15, 101);
+				g.drawString("Profit per hour: " + (int)profitPerHour, 15, 114);
+				g.drawString("Inventory", 223, 75);
+				g.drawString("Contains: ", 230, 88);
+				g.drawString("Status: " + status, 15, 127);
+				g.setColor(Color.RED);
+				g.drawString(numberOfInvenItems + " Items", 230, 101);
+			}
+                	if(showPaintID == 3){
+				g.setColor(Color.white);
+				g.setFont(new Font("Chalkduster", Font.BOLD, 11));
+				g.drawString(""  +Title1, 40, 40);
+				g.drawString("" + Title2, 40, 55);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString("Gained: " + XPgained+ "EXP" , 15, 75);
+				g.drawString("EXP P/H: " + xpPerHour, 15, 88);
+				g.drawString("Percent to next level: ", 15, 114);
+				g.drawString("Status: " + status, 15, 127);
+				g.drawString("Current Level: ", 160, 88);
+				g.drawString(""+currentLvl+"("+levelGained+")", 245, 88);
+				if (XPgained >= 1000) {
+					final long jmillis2 = (System.currentTimeMillis() - startTime);
+					final int XPPerSecond = (int) (XPgained * 1000 / jmillis2); 
+					final int SecsToLevel = XPToLevel / XPPerSecond;
+					g.drawString("Next level in " + getFormattedTime(SecsToLevel * 1000), 15, 101);
+					} else {
+					g.drawString("Calculating time until next level...", 15, 101);
+				}
+				g.drawRect(145,104,100,12);
+                          	g.setColor(new Color(0,0,0,0));
+                         	g.fillRect(146,105,99,11);
+                          	double percentUntilLevel = .99*percentTillLevel;
+                          	g.setColor(new Color(60, 155, 170, 130));
+                          	g.fillRect(146,105,(int)percentUntilLevel,11);
+				g.setColor(Color.red);
+				g.drawString(" -" + percentTillLevel + "%", 248, 114);
+
+			}
+		}
+	}	
+
+
+	@Override
+   	public void messageReceived(final MessageEvent e) {
+		final String serverString = e.getMessage();
+		if (serverString.contains("This is not your familiar.")) {
+			if(isUsingFamiliar){
+				bankedFamiliar = false;
+			}else{
+				bankedFamiliar = true;
+			}
+		}
+		if (serverString.contains("You Summon")) {
+			needToRenewFamiliar = false;
+		}
+		if (serverString.contains("before your familiar vanishes.")) {
+			needToRenewFamiliar = true;
+		}
+		if (serverString.contains("Varrock armour")) {
+			oresMined++;
+			totalXP = totalXP + 65;
+			numberOfInvenItems++;
+		} 		
+		if(serverString.contains("mine some gold")) {
+			oresMined++;
+			totalXP = totalXP + 65;
+			numberOfInvenItems++;
+		} 		
+		if(serverString.contains("two gold ores!")) {
+			oresMined = oresMined+2;
+			totalXP = totalXP + 130;
+			numberOfInvenItems = numberOfInvenItems+2;
+		} 		
+		if(serverString.contains("two pieces of coal")) {
+			oresMined = oresMined+2;
+			totalXP = totalXP + 100;
+			numberOfInvenItems = numberOfInvenItems+2;
+		} 		
+		if(serverString.contains("mine some coal")) {
+			oresMined++;
+			totalXP = totalXP + 50;
+			numberOfInvenItems++;
+		} 		
+		if(serverString.contains("high enough level")) {
+			reEquipPickaxe = false;
+			log("LRCMiner will now no longer try to equip your pickaxe.");
+		} 		
+		if(serverString.contains("you are dead")) {
+			deaths++;
+		} 
+    }
+
+	@Override
+	public void mouseClicked(MouseEvent arg0) {
+	}
+	@Override
+	public void mouseEntered(MouseEvent e) {
+    	}
+	@Override
+	public void mouseExited(MouseEvent e) {
+	}
+	@Override
+	public void mousePressed(MouseEvent e) {
+		Point paintPoint = new Point(e.getPoint());
+		final Rectangle toggleRectangle = new Rectangle(214, 4, 70, 20);
+		if(toggleRectangle.contains(paintPoint) && clickPaint == true) {
+			if (showPaint == true) {
+				showPaint = false;
+				clickPaint = false;
+			} else if (showPaint == false) {
+				showPaint = true;
+				clickPaint = false;
+			}
+		}
+	}
+	@Override
+	public void mouseReleased(MouseEvent arg0) {
+		clickPaint = true;
+	}
+	@Override
+	public void mouseDragged(MouseEvent e) {
+	}
+	@Override
+	public void mouseMoved(MouseEvent e) {
+   		Point p = e.getPoint();  
+		final Rectangle generalRectangle = new Rectangle(4, 4, 70, 20);
+		final Rectangle economyRectangle = new Rectangle(75, 4, 70, 20);
+		final Rectangle experienceRectangle = new Rectangle(146, 4, 70, 20);
+		if(generalRectangle.contains(p) && showPaint == true) {
+			showPaintID = 1;
+		}
+
+		else if(economyRectangle.contains(p)) {
+			showPaintID = 2;
+		}
+
+		else if(experienceRectangle.contains(p)) {
+			showPaintID = 3;
+		}
+	}
+
+
+	//*******************************************************//
+	// GUI
+	// *******************************************************//
+	public class LRCMinerGUI extends JFrame {
+		private static final long serialVersionUID = 1L;
+		boolean settingsFile = true;
+		public LRCMinerGUI() {
+			initComponents();
+		}
+
+		private void clickStartActionPerformed(ActionEvent e) {
+			numberOfRocks = rockNumberBox.getSelectedItem().toString();
+			powerMining = powerMiningBox.getSelectedItem().toString();
+			eatFood = eatBox.getSelectedItem().toString();
+			quickDeposit = quickDepositBox.getSelectedItem().toString();
+			quickPrayer = quickPrayerBox.getSelectedItem().toString();
+			remoteLogout = remoteLogoutBox.getSelectedItem().toString();
+			familiarType = typeFamiliarBox.getSelectedItem().toString();
+			equip1GUI = equip1TextField.getValue();
+			equip2GUI = equip2TextField.getValue();
+			equip1 = Integer.parseInt((String) equip1GUI);
+			equip2 = Integer.parseInt((String) equip2GUI);
+			eatWhenHpBelowGUI = eatWhenHpBelowTextField.getValue();
+			eatWhenHpBelow = Integer.parseInt((String) eatWhenHpBelowGUI);
+			logoutMessage = textTextField.getText().toLowerCase();
+			remoteName = playerNameTextField.getText().toLowerCase();
+			logoutType = welcomeScreenLogoutBox.getSelectedItem().toString();
+			authCode = codeField.getText().toString();
+
+			settings.setProperty("settingsFile", String.valueOf(settingsFile ? true : false));
+				if (settingsFile){
+					settings.setProperty("equip1", equip1TextField.getText());
+					settings.setProperty("equip2", equip2TextField.getText());
+					settings.setProperty("hpBelow", eatWhenHpBelowTextField.getText());
+
+					settings.setProperty("mine", Integer.toString(rockNumberBox.getSelectedIndex()));
+					settings.setProperty("quickDeposit", Integer.toString(quickDepositBox.getSelectedIndex()));
+					settings.setProperty("powerMine", Integer.toString(powerMiningBox.getSelectedIndex()));
+					settings.setProperty("eat", Integer.toString(eatBox.getSelectedIndex()));
+					settings.setProperty("quickPrayer", Integer.toString(quickPrayerBox.getSelectedIndex()));
+					settings.setProperty("familiar", Integer.toString(typeFamiliarBox.getSelectedIndex()));
+
+
+					settings.setProperty("remoteLogout", Integer.toString(remoteLogoutBox.getSelectedIndex()));
+					settings.setProperty("logoutTo", Integer.toString(welcomeScreenLogoutBox.getSelectedIndex()));
+					settings.setProperty("playerText", textTextField.getText());
+					settings.setProperty("playerName", playerNameTextField.getText());
+				}
+				try {
+					settings.store(new FileWriter(new File(GlobalConfiguration.Paths.getSettingsDirectory(),"LRCMiner.ini")),"The GUI Settings for LRCMiner v" + getVersion());
+				} catch (IOException ioe) {
+					log.warning("There has been an error while creating settings file!");
+				}
+			isGUIOpen = false;
+			dispose();
+		}
+
+		private void clickExitActionPerformed(ActionEvent e) {
+			isGUIOpen = false;
+			exitGUI = true;
+			dispose();
+		}
+
+
+		public boolean loadSettings(){
+			try {
+				settings.load(new FileInputStream(new File(GlobalConfiguration.Paths.getSettingsDirectory(),"LRCMiner.ini")));
+			}catch(FileNotFoundException e){
+				log.warning("Settings file was not found! It will be created when you start the script.");
+				return false;
+			}catch(IOException e){
+				log.warning("Error loading settings file!");
+				return false;
+			}
+			try{
+				if (settings.getProperty("validFile") != null)
+					settingsFile = Boolean.parseBoolean(settings.getProperty("validFile"));
+			}catch (java.lang.Exception e){}
+			if (settingsFile){
+				try{
+					if (settings.getProperty("equip1") != null)
+						equip1TextField.setText(settings.getProperty("equip1"));
+					if (settings.getProperty("equip2") != null)
+						equip2TextField.setText(settings.getProperty("equip2"));
+					if (settings.getProperty("hpBelow") != null)
+						eatWhenHpBelowTextField.setText(settings.getProperty("hpBelow"));
+
+					if (settings.getProperty("mine") != null)
+						rockNumberBox.setSelectedIndex(Integer.parseInt(settings.getProperty("mine")));
+					if (settings.getProperty("quickDeposit") != null)
+						quickDepositBox.setSelectedIndex(Integer.parseInt(settings.getProperty("quickDeposit")));
+					if (settings.getProperty("powerMine") != null)
+						powerMiningBox.setSelectedIndex(Integer.parseInt(settings.getProperty("powerMine")));
+					if (settings.getProperty("eat") != null)
+						eatBox.setSelectedIndex(Integer.parseInt(settings.getProperty("eat")));
+					if (settings.getProperty("quickPrayer") != null)
+						quickPrayerBox.setSelectedIndex(Integer.parseInt(settings.getProperty("quickPrayer")));
+					if (settings.getProperty("familiar") != null)
+						typeFamiliarBox.setSelectedIndex(Integer.parseInt(settings.getProperty("familiar")));
+
+
+					//Logout Tab
+					if (settings.getProperty("remoteLogout") != null)
+						remoteLogoutBox.setSelectedIndex(Integer.parseInt(settings.getProperty("remoteLogout")));
+					if (settings.getProperty("logoutTo") != null)
+						welcomeScreenLogoutBox.setSelectedIndex(Integer.parseInt(settings.getProperty("logoutTo")));
+					if (settings.getProperty("playerName") != null)
+						playerNameTextField.setText(settings.getProperty("playerName"));
+					if (settings.getProperty("playerText") != null)
+						textTextField.setText(settings.getProperty("playerText"));
+
+
+				}catch (java.lang.Exception e){
+					log.warning("There has been an error. Default settings will be used.");
+				}
+			}
+			return true;
+		}
+
+		private void initComponents() {
+			UIManager.put("TabbedPane.contentOpaque", Boolean.FALSE);
+			UIManager.put("TabbedPane.tabsOpaque", Boolean.FALSE);
+			backgroundPanel = (JPanel) this.getContentPane(); 
+			backgroundPanel.setLayout(null);
+			clickStart = new JButton();
+			clickExit = new JButton();
+			mineLabel = new JLabel();
+			powerMiningLabel = new JLabel();
+			versionLabel = new JLabel();
+			quickDepositLabel = new JLabel();
+			eatLabel = new JLabel();
+			rockNumberBox = new JComboBox();
+			powerMiningBox = new JComboBox();
+			eatBox = new JComboBox();
+			quickDepositBox = new JComboBox();
+			panelTabs = new JTabbedPane(JTabbedPane.BOTTOM);
+			backgroundPicture = new JLabel();
+			generalPanel = new JPanel();
+			settingsPanel = new JPanel();
+			extrasPanel = new JPanel();
+			logoutPanel = new JPanel();
+			aboutPanel = new JPanel();
+			quickPrayerBox = new JComboBox();
+			quickPrayerLabel = new JLabel();
+			eatingHeadingLabel = new JLabel();
+			familiarHeadingLabel = new JLabel();
+			typeFamiliarBoxLabel = new JLabel();
+			typeFamiliarBox = new JComboBox();
+			equip1TextField = new JFormattedTextField();
+			equip2TextField = new JFormattedTextField();
+			eatWhenHpBelowTextField = new JFormattedTextField();
+			equipHeadingLabel = new JLabel();
+			equip1Label = new JLabel();
+			equip2Label = new JLabel();
+			LocationBox = new JComboBox();
+			LocationLabel = new JLabel();
+			quickPrayerHeadingLabel = new JLabel();
+			miningLabel = new JLabel();
+			eatWhenLabel = new JLabel();
+			textTextField = new JFormattedTextField();
+			textLabel = new JLabel();
+			playerNameTextField = new JFormattedTextField();
+			playerLabel = new JLabel();
+			logoutHeadingLabel = new JLabel();
+			remoteLogoutBox = new JComboBox();
+			remoteLogoutLabel = new JLabel();
+			welcomeScreenLabel = new JLabel();
+			welcomeScreenLogoutBox = new JComboBox();
+			codeHeadingLabel = new JLabel();
+			codeLabel = new JLabel();
+			codeField = new JFormattedTextField();
+			updateLabel = new JLabel();
+
+
+			//======== this ========
+			setTitle("LRCMiner Version "  + getVersion());
+			setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+			setResizable(false);
+			setAlwaysOnTop(true);
+
+			//settings
+			settingsPanel.setOpaque(false);
+			settingsPanel.setLayout(null);
+			
+			generalPanel.setOpaque(false);
+			generalPanel.setLayout(null);
+
+			extrasPanel.setOpaque(false);			
+			extrasPanel.setLayout(null);
+			
+			logoutPanel.setOpaque(false);
+			logoutPanel.setLayout(null);
+
+			aboutPanel.setOpaque(false);
+			aboutPanel.setLayout(null);
+
+			//---- clickStart ----
+			
+			clickStart.setText("Start");
+			clickStart.setFont(new Font("Comic Sans", Font.BOLD, 12));
+			clickStart.setBackground(Color.white);
+			clickStart.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					clickStartActionPerformed(e);
+				}
+			});
+			backgroundPanel.add(clickStart);
+			clickStart.setBounds(540, 230, 70, 25);
+
+			//---- clickExit ----
+			clickExit.setText("Exit");
+			clickExit.setFont(new Font("Comic Sans", Font.BOLD, 12));
+			clickExit.setBackground(Color.white);
+			clickExit.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					clickExitActionPerformed(e);
+				}
+			});
+
+
+			backgroundPanel.add(clickExit);
+			clickExit.setBounds(620, 230, 70, 25);
+			
+
+			//Tabs
+			backgroundPanel.add(panelTabs);
+			panelTabs.setFont(new Font("Comic Sans MS",Font.BOLD, 12));
+			panelTabs.addTab("General", generalPanel);
+			panelTabs.addTab("Settings", settingsPanel);
+			panelTabs.addTab("Extras", extrasPanel);
+			panelTabs.addTab("Logout", logoutPanel);
+			panelTabs.addTab("About", aboutPanel);
+			panelTabs.setBounds(8, 8, 690, 250);
+
+
+			//---- versionLabel ----
+			versionLabel.setText("Version " + getVersion());
+			versionLabel.setFont(new Font("Comic Sans", Font.PLAIN, 13));
+			versionLabel.setForeground(Color.white);
+			backgroundPanel.add(versionLabel);
+			versionLabel.setBounds(600, 35, 180, 20);
+
+			//General Panel
+
+			//---- LocationLabel ----
+			LocationLabel.setText("Mine at:");
+			LocationLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			LocationLabel.setForeground(Color.white);
+			generalPanel.add(LocationLabel);
+			LocationLabel.setBounds(20, 25, 110, 20);
+
+			//---- LocationBox ----
+			LocationBox.setBackground(Color.white);
+			LocationBox.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+			LocationBox.setModel(new DefaultComboBoxModel(new String[] {
+				"Living Rock Cavern"
+			}));
+			generalPanel.add(LocationBox);
+			LocationBox.setBounds(135, 25, 180, 20);
+
+			//---- codeHeadingLabel ----
+			codeHeadingLabel.setText("-------- Auth Code --------");
+			codeHeadingLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			codeHeadingLabel.setForeground(Color.white);
+			generalPanel.add(codeHeadingLabel);
+			codeHeadingLabel.setBounds(40, 55, 350, 20);
+
+			//---- codeLabel ----
+			codeLabel.setText("Code: ");
+			codeLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			codeLabel.setForeground(Color.white);
+			generalPanel.add(codeLabel);
+			codeLabel.setBounds(20, 85, 80, 20);
+
+			//---- codeField ----
+			codeField.setBackground(Color.white);
+			codeField.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			codeField.setValue("24522-27854-32523-12367");
+			codeField.setEnabled(true);			
+			generalPanel.add(codeField);
+			codeField.setBounds(100, 85, 200, 20);
+
+
+			//Settings Panel
+
+			//---- miningLabel ----
+			miningLabel.setText("---- Mining Options ----");
+			miningLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			miningLabel.setForeground(Color.white);
+			settingsPanel.add(miningLabel);
+			miningLabel.setBounds(40, 25, 200, 20);
+
+			//---- mineLabel ----
+			mineLabel.setText("Mine:");
+			mineLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			mineLabel.setForeground(Color.white);
+			settingsPanel.add(mineLabel);
+			mineLabel.setBounds(20, 55, 120, 20);
+
+			//---- rockNumberBox ----
+			rockNumberBox.setBackground(Color.white);
+			rockNumberBox.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+			rockNumberBox.setModel(new DefaultComboBoxModel(new String[] {
+				"2 Gold Rocks",
+				"3 Coal Rocks"
+			}));
+			settingsPanel.add(rockNumberBox);
+			rockNumberBox.setBounds(135, 55, 140, 20);
+		
+
+			//---- quickDepositLabel ----
+			quickDepositLabel.setText("Quick Deposit?");
+			quickDepositLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			quickDepositLabel.setForeground(Color.white);
+			settingsPanel.add(quickDepositLabel);
+			quickDepositLabel.setBounds(20, 85, 100, 20);
+
+			//---- quickDepositBox ----
+			quickDepositBox.setBackground(Color.white);
+			quickDepositBox.setModel(new DefaultComboBoxModel(new String[] {
+				"No",
+				"Yes"
+			}));
+			settingsPanel.add(quickDepositBox);
+			quickDepositBox.setBounds(135, 85, 100, 20);
+
+
+			//---- powerMiningLabel ----
+			powerMiningLabel.setText("Powermining:");
+			powerMiningLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			powerMiningLabel.setForeground(Color.white);
+			settingsPanel.add(powerMiningLabel);
+			powerMiningLabel.setBounds(20, 115, 120, 20);
+
+			//---- powerMiningBox ----
+			powerMiningBox.setBackground(Color.white);
+			powerMiningBox.setModel(new DefaultComboBoxModel(new String[] {
+				"No",
+				"Yes"
+			}));
+			settingsPanel.add(powerMiningBox);
+			powerMiningBox.setBounds(135, 115, 100, 20);
+
+
+			//---- equipHeadingLabel ----
+			equipHeadingLabel.setText("---- Equip Upon Death ----");
+			equipHeadingLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			equipHeadingLabel.setForeground(Color.white);
+			settingsPanel.add(equipHeadingLabel);
+			equipHeadingLabel.setBounds(320, 25, 200, 20);
+
+
+			//---- equip1Label ----
+			equip1Label.setText("Equip #1:");
+			equip1Label.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			equip1Label.setForeground(Color.white);
+			settingsPanel.add(equip1Label);
+			equip1Label.setBounds(300, 55, 100, 20);
+
+
+			//---- equip1TextField ----
+			equip1TextField.setBackground(Color.white);
+			equip1TextField.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			equip1TextField.setValue("0");
+			equip1TextField.setEnabled(true);			
+			settingsPanel.add(equip1TextField);
+			equip1TextField.setBounds(415, 55, 90, 20);
+
+			//---- equip2Label ----
+			equip2Label.setText("Equip #2:");
+			equip2Label.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			equip2Label.setForeground(Color.white);
+			settingsPanel.add(equip2Label);
+			equip2Label.setBounds(300, 85, 100, 20);
+
+
+			//---- equip1TextField ----
+			equip2TextField.setBackground(Color.white);
+			equip2TextField.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			equip2TextField.setValue("0");
+			equip2TextField.setEnabled(true);			
+			settingsPanel.add(equip2TextField);
+			equip2TextField.setBounds(415, 85, 90, 20);
+
+
+
+
+
+			//Extras Panel
+
+			//---- eatingHeadingLabel ----
+			eatingHeadingLabel.setText("---- Eating Options ----");
+			eatingHeadingLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			eatingHeadingLabel.setForeground(Color.white);
+			extrasPanel.add(eatingHeadingLabel);
+			eatingHeadingLabel.setBounds(40, 25, 190, 20);
+
+
+			//---- eatLabel ----
+			eatLabel.setText("Eat:");
+			eatLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			eatLabel.setForeground(Color.white);
+			extrasPanel.add(eatLabel);
+			eatLabel.setBounds(20, 55, 100, 20);
+
+
+			//---- eatBox ----
+			eatBox.setBackground(Color.white);
+			eatBox.setModel(new DefaultComboBoxModel(new String[] {
+				"None",
+				"Trout",
+				"Salmon",
+				"Tuna",
+				"Lobster",
+				"Swordfish",
+				"Monkfish",
+				"Manta ray",
+				"Shark",
+				"Cavefish",
+				"Rocktail"
+			}));
+			extrasPanel.add(eatBox);
+			eatBox.setBounds(135, 55, 140, 20);
+
+			//---- eatWhenLabel ----
+			eatWhenLabel.setText("When HP below");
+			eatWhenLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			eatWhenLabel.setForeground(Color.white);
+			extrasPanel.add(eatWhenLabel);
+			eatWhenLabel.setBounds(20, 85, 115, 20);
+
+			//---- eatWhenHpBelowTextField ----
+			eatWhenHpBelowTextField.setBackground(Color.white);
+			eatWhenHpBelowTextField.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			eatWhenHpBelowTextField.setValue("250");
+			eatWhenHpBelowTextField.setEnabled(true);			
+			extrasPanel.add(eatWhenHpBelowTextField);
+			eatWhenHpBelowTextField.setBounds(135, 85, 90, 20);
+
+			//---- quickPrayerHeadingLabel ----
+			quickPrayerHeadingLabel.setText("---- Combat Options ----");
+			quickPrayerHeadingLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			quickPrayerHeadingLabel.setForeground(Color.white);
+			extrasPanel.add(quickPrayerHeadingLabel);
+			quickPrayerHeadingLabel.setBounds(320, 25, 200, 20);
+
+
+			//---- quickPrayerLabel ----
+			quickPrayerLabel.setText("Quick Prayer:");
+			quickPrayerLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			quickPrayerLabel.setForeground(Color.white);
+			extrasPanel.add(quickPrayerLabel);
+			quickPrayerLabel.setBounds(300, 55, 100, 20);
+
+
+			//---- quickPrayerBox ----
+			quickPrayerBox.setBackground(Color.white);
+			quickPrayerBox.setModel(new DefaultComboBoxModel(new String[] {
+				"No",
+				"Yes"
+			}));
+			extrasPanel.add(quickPrayerBox);
+			quickPrayerBox.setBounds(415, 55, 100, 20);
+
+
+			//---- familiarHeadingLabel ----
+			familiarHeadingLabel.setText("---- Familiar Options ----");
+			familiarHeadingLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			familiarHeadingLabel.setForeground(Color.white);
+			extrasPanel.add(familiarHeadingLabel);
+			familiarHeadingLabel.setBounds(320, 95, 200, 20);
+
+
+
+			//---- typeFamiliarBoxLabel ----
+			typeFamiliarBoxLabel.setText("Use Familiar:");
+			typeFamiliarBoxLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			typeFamiliarBoxLabel.setForeground(Color.white);
+			extrasPanel.add(typeFamiliarBoxLabel);
+			typeFamiliarBoxLabel.setBounds(300, 125, 100, 20);
+
+
+			//---- typeFamiliarBox ----
+			typeFamiliarBox.setBackground(Color.white);
+			typeFamiliarBox.setModel(new DefaultComboBoxModel(new String[] {
+				"None",
+				"Desert Wyrm",
+				"Spirit Terrorbird",
+				"War Tortoise",
+				"Obsidian Golem",
+				"Lava Titan",
+				"Pack Yak"
+			}));
+			extrasPanel.add(typeFamiliarBox);
+			typeFamiliarBox.setBounds(415, 125, 150, 20);
+
+
+			//Logout Panel
+
+			//---- logoutHeadingLabel ----
+			logoutHeadingLabel.setText("---- Logout Options: Logout When ----");
+			logoutHeadingLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			logoutHeadingLabel.setForeground(Color.white);
+			logoutPanel.add(logoutHeadingLabel);
+			logoutHeadingLabel.setBounds(40, 25, 350, 20);
+
+			//---- remoteLogoutLabel ----
+			remoteLogoutLabel.setText("Remote Logout:");
+			remoteLogoutLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			remoteLogoutLabel.setForeground(Color.white);
+			logoutPanel.add(remoteLogoutLabel);
+			remoteLogoutLabel.setBounds(20, 55, 100, 20);
+
+			//---- remoteLogoutBox ----
+			remoteLogoutBox.setBackground(Color.white);
+			remoteLogoutBox.setModel(new DefaultComboBoxModel(new String[] {
+				"No",
+				"Yes"
+			}));
+			logoutPanel.add(remoteLogoutBox);
+			remoteLogoutBox.setBounds(135, 55, 150, 20);
+
+			//---- playerLabel ----
+			playerLabel.setText("Player: ");
+			playerLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			playerLabel.setForeground(Color.white);
+			logoutPanel.add(playerLabel);
+			playerLabel.setBounds(20, 85, 100, 20);
+
+			//---- playerNameTextField ----
+			playerNameTextField.setBackground(Color.white);
+			playerNameTextField.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			playerNameTextField.setValue("Name Here");
+			playerNameTextField.setEnabled(true);			
+			logoutPanel.add(playerNameTextField);
+			playerNameTextField.setBounds(135, 85, 90, 20);
+
+			//---- textLabel ----
+			textLabel.setText("Says: ");
+			textLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			textLabel.setForeground(Color.white);
+			logoutPanel.add(textLabel);
+			textLabel.setBounds(20, 115, 100, 20);
+
+			//---- textTextField ----
+			textTextField.setBackground(Color.white);
+			textTextField.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			textTextField.setValue("Text Here");
+			textTextField.setEnabled(true);			
+			logoutPanel.add(textTextField);
+			textTextField.setBounds(135, 115, 200, 20);
+
+			//---- welcomeScreenLabel ----
+			welcomeScreenLabel.setText("Log out To:");
+			welcomeScreenLabel.setFont(new Font("Comic Sans", Font.PLAIN, 12));
+			welcomeScreenLabel.setForeground(Color.white);
+			logoutPanel.add(welcomeScreenLabel);
+			welcomeScreenLabel.setBounds(20, 145, 100, 20);
+
+			//---- welcomeScreenLogoutBox ----
+			welcomeScreenLogoutBox.setBackground(Color.white);
+			welcomeScreenLogoutBox.setModel(new DefaultComboBoxModel(new String[] {
+				"Login Screen",
+				"Welcome Screen"
+			}));
+			logoutPanel.add(welcomeScreenLogoutBox);
+			welcomeScreenLogoutBox.setBounds(135, 145, 150, 20);
+
+
+
+
+			//About Panel
+			//---- updateLabel ----
+			if(updateAvail){
+				updateLabel.setText("Update Available");
+				updateLabel.setForeground(Color.red);
+			}else{
+				updateLabel.setText("LRCMiner is up-to-date");
+				updateLabel.setForeground(Color.white);
+			}
+			updateLabel.setFont(new Font("Comic Sans", Font.PLAIN, 14));
+			aboutPanel.add(updateLabel);
+			updateLabel.setBounds(40, 25, 350, 100);
+
+
+			//---- backgroundPicture ----
+			try {
+				backgroundPicture.setIcon(new ImageIcon(GUIpicture));
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
+			backgroundPanel.add(backgroundPicture);
+			backgroundPicture.setBounds(0, 0, 707, 266);
+
+			setSize(707, 288);
+			setLocationRelativeTo(getOwner());
+			// GEN-END:initComponents
+			loadSettings();
+			//Loads settings
+
+
+
+		}
+
+		private JButton clickStart;
+		private JButton clickExit;
+		private JPanel backgroundPanel;
+		private JLabel mineLabel;
+		private JLabel powerMiningLabel;
+		private JLabel quickDepositLabel;
+		private JLabel eatLabel;
+		private JLabel versionLabel;
+		private JComboBox rockNumberBox;
+		private JComboBox powerMiningBox;
+		private JComboBox eatBox;
+		private JComboBox quickDepositBox;
+		private JTabbedPane panelTabs;
+		private JLabel backgroundPicture;
+		private JPanel generalPanel;
+		private JPanel extrasPanel;
+		private JPanel settingsPanel;
+		private JPanel logoutPanel;
+		private JPanel aboutPanel;
+		private JComboBox quickPrayerBox;
+		private JLabel quickPrayerLabel;
+		private JLabel eatingHeadingLabel;
+		private JLabel typeFamiliarBoxLabel;
+		private JComboBox typeFamiliarBox;
+		private JLabel familiarHeadingLabel;
+		private JFormattedTextField equip1TextField;
+		private JFormattedTextField equip2TextField;
+		private JFormattedTextField eatWhenHpBelowTextField;
+		private JLabel equipHeadingLabel;
+		private JLabel equip1Label;
+		private JLabel equip2Label;
+		private JLabel LocationLabel;
+		private JComboBox LocationBox;
+		private JLabel quickPrayerHeadingLabel;
+		private JLabel miningLabel;
+		private JLabel eatWhenLabel;
+		private JFormattedTextField textTextField;
+		private JLabel textLabel;
+		private JFormattedTextField playerNameTextField;
+		private JLabel playerLabel;
+		private JLabel logoutHeadingLabel;
+		private JComboBox remoteLogoutBox;
+		private JLabel remoteLogoutLabel;
+		private JLabel welcomeScreenLabel;
+		private JComboBox welcomeScreenLogoutBox;
+		private JLabel codeLabel;
+		private JLabel codeHeadingLabel;
+		private JLabel updateLabel;
+		private JFormattedTextField codeField;
+	}
+}
