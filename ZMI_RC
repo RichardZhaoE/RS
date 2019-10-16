@@ -1,0 +1,2612 @@
+//*******************************************************//
+//ZMI Runecrafter
+//Author: Richard
+//Redistributing and releasing different versions is not allowed unless granted permission by Richard
+//2011
+// *******************************************************//
+
+import java.util.*;
+import java.awt.*;
+import java.awt.Checkbox;
+import java.awt.event.*;
+import java.awt.image.RenderedImage;
+import java.text.NumberFormat;
+import java.text.DecimalFormat;
+
+import java.net.*;
+import java.io.*;
+import javax.imageio.ImageIO;
+
+import java.lang.Object;
+import javax.swing.*;
+import org.rsbot.util.GlobalConfiguration;
+
+import org.rsbot.script.*;
+import org.rsbot.script.methods.*;
+import org.rsbot.script.wrappers.*;
+import org.rsbot.event.listeners.*;
+import org.rsbot.event.events.*;
+import org.rsbot.event.*;
+import org.rsbot.bot.Bot;
+import org.rsbot.script.methods.Skills;
+
+
+
+@ScriptManifest(authors = {"Richard"}, keywords = "Runecrafting", name = "ZMI Runecrafter", version = 1.03, description = ("ZMI Runecrafting"))
+              
+public class ZMIRunecrafter extends Script implements PaintListener, MessageListener,  MouseListener, MouseMotionListener {
+
+    	ZMIRunecrafter gui;
+	public boolean isGUIOpen = true, exitGUI;
+	ChatResponder chatRespond;
+	antiBan AntiBan;
+	private Properties settings = new Properties();
+
+
+	RSTile lunarBankTile = new RSTile(2099,3919);
+	int lunarBankBoothID = 16700;
+	RSTile ZMIAltar = new RSTile(3316, 4811);
+	RSArea ZMIArea = new RSArea(new RSTile(3265, 4801), new RSTile(3320, 4862));
+	RSArea safeSqueezeArea = new RSArea(new RSTile(3306, 4816), new RSTile(3314, 4821));
+
+
+	RSTile[] lunarBankPath = { new RSTile(2113, 3915), new RSTile(2112, 3915), new RSTile(2111, 3915), new RSTile(2110, 3915), new RSTile(2109, 3915), new RSTile(2108, 3915), new RSTile(2107, 3915), new RSTile(2106, 3915), new RSTile(2105, 3915), new RSTile(2104, 3915), new RSTile(2103, 3915), new RSTile(2102, 3915), new RSTile(2101, 3915), new RSTile(2100, 3915), new RSTile(2100, 3916), new RSTile(2100, 3917), new RSTile(2099, 3918), new RSTile(2099, 3919)};
+	
+	RSTile[] teleLocationToLadder = { new RSTile(2469, 3242),  new RSTile(2468, 3243),  new RSTile(2467, 3244),  new RSTile(2466, 3245),  new RSTile(2466, 3246),  new RSTile(2465, 3247),  new RSTile(2464, 3248),  new RSTile(2463, 3249),  new RSTile(2462, 3249),  new RSTile(2461, 3249),  new RSTile(2460, 3249),  new RSTile(2459, 3249),  new RSTile(2458, 3249),  new RSTile(2457, 3249),  new RSTile(2456, 3248),  new RSTile(2455, 3247),  new RSTile(2455, 3246),  new RSTile(2455, 3245),  new RSTile(2455, 3244),  new RSTile(2454, 3243),  new RSTile(2454, 3242),  new RSTile(2454, 3241),  new RSTile(2454, 3240),  new RSTile(2454, 3239),  new RSTile(2454, 3238),  new RSTile(2454, 3237),  new RSTile(2454, 3236),  new RSTile(2454, 3235),  new RSTile(2454, 3234),  new RSTile(2454, 3233),  new RSTile(2454, 3232)};
+	
+
+	RSTile[] toZMIAltar = { new RSTile(3270, 4855),  new RSTile(3270, 4854),  new RSTile(3270, 4853),  new RSTile(3270, 4852),  new RSTile(3270, 4851),  new RSTile(3270, 4850),  new RSTile(3270, 4849),  new RSTile(3270, 4848),  new RSTile(3270, 4847),  new RSTile(3270, 4846),  new RSTile(3270, 4845),  new RSTile(3270, 4844),  new RSTile(3270, 4843),  new RSTile(3270, 4842),  new RSTile(3270, 4841),  new RSTile(3270, 4840),  new RSTile(3270, 4839),  new RSTile(3270, 4838),  new RSTile(3270, 4837),  new RSTile(3270, 4836),  new RSTile(3270, 4835),  new RSTile(3270, 4834),  new RSTile(3270, 4833),  new RSTile(3270, 4832),  new RSTile(3270, 4831),  new RSTile(3270, 4830),  new RSTile(3270, 4829),  new RSTile(3270, 4828),  new RSTile(3270, 4827),  new RSTile(3270, 4826),  new RSTile(3270, 4825),  new RSTile(3271, 4824),  new RSTile(3271, 4823),  new RSTile(3271, 4822),  new RSTile(3271, 4821),  new RSTile(3271, 4820),  new RSTile(3271, 4819),  new RSTile(3272, 4814),  new RSTile(3273, 4813),  new RSTile(3274, 4812),  new RSTile(3275, 4811),  new RSTile(3276, 4811),  new RSTile(3277, 4811),  new RSTile(3278, 4811),  new RSTile(3279, 4811),  new RSTile(3280, 4811),  new RSTile(3281, 4810),  new RSTile(3282, 4810),  new RSTile(3283, 4810),  new RSTile(3284, 4810),  new RSTile(3285, 4810),  new RSTile(3286, 4811),  new RSTile(3287, 4812),  new RSTile(3288, 4812),  new RSTile(3289, 4812),  new RSTile(3290, 4812),  new RSTile(3291, 4812),  new RSTile(3292, 4812),  new RSTile(3293, 4812),  new RSTile(3294, 4812),  new RSTile(3295, 4812),  new RSTile(3296, 4812),  new RSTile(3297, 4812),  new RSTile(3298, 4812),  new RSTile(3299, 4812),  new RSTile(3300, 4812),  new RSTile(3301, 4812),  new RSTile(3302, 4811),  new RSTile(3303, 4811),  new RSTile(3304, 4811),  new RSTile(3305, 4811),  new RSTile(3306, 4811),  new RSTile(3307, 4811),  new RSTile(3308, 4811),  new RSTile(3309, 4811),  new RSTile(3310, 4811),  new RSTile(3311, 4811),  new RSTile(3312, 4811),  new RSTile(3313, 4811),  new RSTile(3314, 4811) };
+
+
+	RSTile[] toZMIAltarSafeRoute = { new RSTile(3271, 4859),  new RSTile(3271, 4858),  new RSTile(3272, 4857),  new RSTile(3273, 4857),  new RSTile(3274, 4856),  new RSTile(3275, 4855),  new RSTile(3276, 4854),  new RSTile(3277, 4853),  new RSTile(3278, 4852),  new RSTile(3278, 4851),  new RSTile(3279, 4850),  new RSTile(3279, 4849),  new RSTile(3280, 4848),  new RSTile(3280, 4847),  new RSTile(3281, 4847),  new RSTile(3281, 4846),  new RSTile(3282, 4846),  new RSTile(3282, 4845),  new RSTile(3282, 4844),  new RSTile(3282, 4843),  new RSTile(3281, 4843),  new RSTile(3281, 4842),  new RSTile(3280, 4842),  new RSTile(3280, 4841),  new RSTile(3279, 4840),  new RSTile(3278, 4839),  new RSTile(3278, 4838),  new RSTile(3278, 4837),  new RSTile(3278, 4836),  new RSTile(3278, 4835),  new RSTile(3278, 4834),  new RSTile(3279, 4834),  new RSTile(3280, 4834),  new RSTile(3280, 4833),  new RSTile(3281, 4833),  new RSTile(3281, 4832),  new RSTile(3282, 4832),  new RSTile(3283, 4832),  new RSTile(3284, 4832),  new RSTile(3285, 4832),  new RSTile(3286, 4832),  new RSTile(3286, 4833),  new RSTile(3287, 4834),  new RSTile(3288, 4835),  new RSTile(3289, 4835),  new RSTile(3290, 4835),  new RSTile(3291, 4835),  new RSTile(3292, 4835),  new RSTile(3293, 4835),  new RSTile(3295, 4835),  new RSTile(3296, 4835),  new RSTile(3296, 4835),  new RSTile(3297, 4834),  new RSTile(3298, 4834),  new RSTile(3300, 4834),  new RSTile(3301, 4834),  new RSTile(3302, 4834),  new RSTile(3304, 4835),  new RSTile(3305, 4835),  new RSTile(3307, 4836),  new RSTile(3309, 4836),  new RSTile(3310, 4836),  new RSTile(3311, 4835),  new RSTile(3312, 4835),  new RSTile(3314, 4835),  new RSTile(3314, 4835),  new RSTile(3316, 4835),  new RSTile(3318, 4835),  new RSTile(3319, 4834),  new RSTile(3320, 4833),  new RSTile(3320, 4832),  new RSTile(3320, 4830),  new RSTile(3319, 4829),  new RSTile(3318, 4828),  new RSTile(3317, 4828),  new RSTile(3315, 4828),  new RSTile(3314, 4828),  new RSTile(3313, 4828),  new RSTile(3312, 4828),  new RSTile(3310, 4828),  new RSTile(3309, 4828),  new RSTile(3308, 4828),  new RSTile(3306, 4828),  new RSTile(3305, 4828),  new RSTile(3304, 4828),  new RSTile(3303, 4828),  new RSTile(3301, 4828),  new RSTile(3299, 4828),  new RSTile(3298, 4828),  new RSTile(3297, 4828),  new RSTile(3296, 4828),  new RSTile(3294, 4828),  new RSTile(3293, 4828),  new RSTile(3292, 4829),  new RSTile(3291, 4829),  new RSTile(3290, 4829),  new RSTile(3288, 4829),  new RSTile(3287, 4828),  new RSTile(3286, 4828),  new RSTile(3285, 4828),  new RSTile(3285, 4827),  new RSTile(3284, 4826),  new RSTile(3283, 4825),  new RSTile(3282, 4824),  new RSTile(3281, 4823),  new RSTile(3280, 4822),  new RSTile(3280, 4821),  new RSTile(3280, 4820),  new RSTile(3280, 4819),  new RSTile(3280, 4818),  new RSTile(3281, 4818),  new RSTile(3282, 4818),  new RSTile(3283, 4818),  new RSTile(3284, 4818),  new RSTile(3285, 4818),  new RSTile(3286, 4818),  new RSTile(3287, 4818),  new RSTile(3288, 4819),  new RSTile(3289, 4819),  new RSTile(3289, 4820),  new RSTile(3290, 4820),  new RSTile(3291, 4821),  new RSTile(3292, 4821),  new RSTile(3293, 4821),  new RSTile(3294, 4821),  new RSTile(3295, 4821),  new RSTile(3296, 4821),  new RSTile(3297, 4821),  new RSTile(3297, 4820),  new RSTile(3298, 4820),  new RSTile(3299, 4820),  new RSTile(3300, 4820),  new RSTile(3301, 4820),  new RSTile(3302, 4820),  new RSTile(3303, 4820),  new RSTile(3304, 4820),  new RSTile(3305, 4820),  new RSTile(3306, 4820),  new RSTile(3307, 4820),  new RSTile(3308, 4819) };
+
+	RSTile[] toZMISafeRoute = {   new RSTile(3316, 4813), new RSTile(3315, 4814), new RSTile(3314, 4815), new RSTile(3313, 4816), new RSTile(3312, 4817)};
+
+
+	int ZMIBanker = 6362;
+	int ZMIPrayerAltar = 411;
+	int ZMILadderDown = 26849;
+	int ZMILadderUp = 26850;
+	int intoZMIAltar = 26844;
+	int outOfZMIAltar = 26845;
+
+	int bankMethod = 0; // 0 = Lunar 1 = ZMI
+	int bankRune = 0; //Component for bank 18 = fire 19 = body 14 = mind 15 = air
+	int requiredRune = 0;
+	int timesCrafted = 0;
+	
+	//Messages
+	public String startMessage1 = "Hello. Thank you for choosing ZMI Runecrafter";
+	public String startMessage2 = "Initializing script...";
+
+
+	//Items
+	int pureEssenceID = 7936;
+	private final int smallID = 5509; // small
+	private final int medID = 5510; // med
+	private final int largeID = 5512; // large
+	private final int giantID = 5514; // giant
+	private final int giantBrokenID = 5515;
+	private final int largeBrokenID = 5513;
+	private final int medBrokenID = 5511;
+
+	boolean useSmallPouch = false;
+	boolean useMediumPouch = false;
+	boolean useLargePouch = false;
+	boolean useGiantPouch = false;
+	boolean checkedSmall = false;
+	boolean checkedMedium = false;
+	boolean checkedLarge = false;
+	boolean checkedGiant = false;
+
+	int pouchCount = 0;
+	int fullPouchCount = 0;
+	int emptyPouchCount = 0;
+	int bankFailSafe = 0;
+	boolean filledPouch = false;
+	boolean usingEarthStaff = true;
+	boolean isfullBank = false;
+	boolean useOuraniaTeleport = false;
+	boolean issafeRoute = false;
+
+	//Prices
+	private int essencePrice;
+	private int fireRunePrice;
+	private int waterRunePrice;
+	private int airRunePrice;
+	private int earthRunePrice;
+	private int mindRunePrice;
+	private int bodyRunePrice;
+	private int lawRunePrice;
+	private int cosmicRunePrice;
+	private int astralRunePrice;
+	private int bloodRunePrice;
+	private int natureRunePrice;
+	private int soulRunePrice;
+	private int deathRunePrice;
+	private int chaosRunePrice;
+	public int profit = 0;
+	public int actualProfit2 = 0;
+
+
+
+	// Runes
+	int fireRune = 554;
+	int waterRune = 555;
+	int airRune = 556;
+	int earthRune = 557;
+	int mindRune = 558;
+	int bodyRune = 559;
+	int lawRune = 563;
+	int cosmicRune = 564;
+	int astralRune = 9075;
+
+	int bloodRune = 575;
+	int natureRune = 561;
+	int soulRune = 566;
+	int deathRune = 560;
+	int chaosRune = 562;
+	boolean calculatedEssence = false;
+	boolean isUsingPrayer = false;
+
+	int foodID;
+	int hpBelow;
+	String usePrayer;
+
+	//Varibles
+	String retrievedAuthCode;
+	String authCode;
+	String ipAddress;	
+			//Energy
+		private int turnOnRunAt = random(50,80);
+			//EXP
+		private int lastEXP = 0;
+		private long lastRecievedEXP = 0;
+			//Remote Logout
+		public boolean isUsingRemote = false;
+		public boolean logToLoginScreen = true;
+		public boolean doLogout = false;
+		public String previousMessage = null;
+			//AntiBan
+		long preformedAntiban = System.currentTimeMillis();
+			//Status	
+		public String status = null;
+			//Animations
+			//Script			
+			boolean isRepairingPouches = false;
+			int runesCrafted;
+			int essenceUsed;
+			int timesRun = 0;
+			long expGained = 0;
+			int pouchesRepaired = 0;
+
+	//GUI
+	public String remoteLogout;
+	public String logoutType;
+	private boolean guiStart = false;
+	private String remoteName = "", logoutMessage = "";
+	public String bankStyle;
+	public String repairingPouches;
+
+
+
+	//Paint
+	public long startTime = 0;
+	public Image GUIpicture;
+	public String Title1 = "ZMI Runecrafter";
+	public String Title2 = "       Version v" +getVersion();
+
+	private int sine = 0;
+
+	private int sineM = 1;
+	public int xpPerHour = 0;
+	public int totalXP = 0;
+	public int levelsGained = 0;
+	public int startXP = 0;
+	public int XPToLevel = 0;
+	public int startLevel = 0;
+	public int percentTillLevel = 0;
+	public int currentLVL = 0;
+	public int currentXP = 0;
+	private int numberOfInvenItems;
+	boolean showPaint = true;
+	public int showPaintID = 1;
+	public boolean clickPaint = true;
+	RSTile objectTile = null;
+
+	public boolean onStart() { 
+		try {
+			URL retrieveAuthCode = new URL("http://www.scripts.site90.net/Scripts/ZMIRunecrafter/authCode.php");
+			BufferedReader read = new BufferedReader(new InputStreamReader(retrieveAuthCode.openStream()));
+			retrievedAuthCode = read.readLine();
+			URL retrieveIP = new URL("http://www.scripts.site90.net/Scripts/showIp/showIp.php");
+			BufferedReader in = new BufferedReader(new InputStreamReader(retrieveIP.openStream()));
+			ipAddress = in.readLine();
+		}catch (IOException e) {
+			
+		}
+		log(startMessage1);
+		log(startMessage2);
+		GUIpicture = getImage("ZMIRunecraftGUI.jpg");
+		gui = new ZMIRunecrafter();
+		gui.setVisible(true);
+
+	//Prices
+	log("Retrieving prices. . . please be patient. . .");
+	essencePrice = grandExchange.loadItemInfo(pureEssenceID).getMarketPrice();
+	fireRunePrice = grandExchange.loadItemInfo(fireRune).getMarketPrice();
+	waterRunePrice = grandExchange.loadItemInfo(waterRune).getMarketPrice();
+	airRunePrice = grandExchange.loadItemInfo(airRune).getMarketPrice();
+	earthRunePrice = grandExchange.loadItemInfo(earthRune).getMarketPrice();
+	mindRunePrice = grandExchange.loadItemInfo(mindRune).getMarketPrice();
+	bodyRunePrice = grandExchange.loadItemInfo(bodyRune).getMarketPrice();
+	lawRunePrice = grandExchange.loadItemInfo(lawRune).getMarketPrice();
+	cosmicRunePrice = grandExchange.loadItemInfo(cosmicRune).getMarketPrice();
+	astralRunePrice = grandExchange.loadItemInfo(astralRune).getMarketPrice();
+	bloodRunePrice = grandExchange.loadItemInfo(bloodRune).getMarketPrice();
+	natureRunePrice = grandExchange.loadItemInfo(natureRune).getMarketPrice();
+	soulRunePrice = grandExchange.loadItemInfo(soulRune).getMarketPrice();
+	deathRunePrice = grandExchange.loadItemInfo(deathRune).getMarketPrice();
+	chaosRunePrice = grandExchange.loadItemInfo(chaosRune).getMarketPrice();
+	log("All prices have been retrieved.");
+	//End Prices
+
+		while (isGUIOpen) {
+    			sleep(100); 	
+			}
+
+		startTime = System.currentTimeMillis();
+		
+	if(!retrievedAuthCode.equals(authCode)){
+		log.severe("Error! Auth code is incorrect!");
+		log.severe("Restart the script without touching the settings!");
+		exitGUI = true;
+	}
+		env.enableRandoms();
+		AntiBan = new antiBan();
+
+	if (remoteLogout.equals("Yes")) {
+		chatRespond = new ChatResponder();
+		chatRespond.start();
+		isUsingRemote = true;
+	}
+
+	if (logoutType.equals("Login Screen")) {
+		logToLoginScreen = true;
+	}else{
+		logToLoginScreen = false;
+	}
+
+	if (repairingPouches.equals("Yes")) {
+		isRepairingPouches = true;
+	}
+
+	if (usePrayer.equals("Yes")) {
+		isUsingPrayer = true;
+	}
+
+	if (bankStyle.equals("Lunar Isle")) {
+		bankMethod = 0; // 0 = Lunar 1 = ZMI
+		bankRune = 0; //Component for bank 18 = fire 19 = body 14 = mind 15 = air
+		requiredRune = 0;
+		earthStaffCheck();
+	}else if (bankStyle.equals("Fire runes - ZMI")) {
+		requiredRune = fireRune;
+		bankRune = 18; //Component for bank 18 = fire 19 = body 14 = mind 15 = air
+		bankMethod = 1;
+	}else if (bankStyle.equals("Body runes - ZMI")) {
+		requiredRune = bodyRune;
+		bankRune = 19; //Component for bank 18 = fire 19 = body 14 = mind 15 = air
+		bankMethod = 1;
+	}else if (bankStyle.equals("Mind runes - ZMI")) {
+		requiredRune = mindRune;
+		bankRune = 14; //Component for bank 18 = fire 19 = body 14 = mind 15 = air
+		bankMethod = 1;
+	}else if (bankStyle.equals("Air runes - ZMI")) {
+		requiredRune = airRune;
+		bankRune = 15; //Component for bank 18 = fire 19 = body 14 = mind 15 = air
+		bankMethod = 1;
+	}
+
+	return !exitGUI;
+	}
+
+	public String getAuthor() {
+		return "Richard";
+	}
+
+	public String getName() {
+		return "ZMIRunecrafter";
+	}
+	public String getScriptCategory() {
+		return "Runecrafting";
+	}
+
+	public double getVersion() {
+		return 1.03;
+	}
+
+	private Image getImage(String imageName) {
+		try {
+		File image = new File(GlobalConfiguration.Paths.getScriptsDirectory() + "/" + imageName);
+            		if(image.exists())
+                	return ImageIO.read(image.toURI().toURL());
+            	Image URLImage = ImageIO.read(new URL("http://www.scripts.site90.net/Scripts/ZMIRunecrafter/" + imageName));
+            	if(URLImage != null) {
+                ImageIO.write((RenderedImage)URLImage, "JPG", image);
+                return URLImage;
+            	}
+        	} catch(IOException e) {
+			log("Failed to retrieve picture(s).");
+        }
+        return null;
+	}
+
+	private boolean waitForInterface(RSInterface Interface, int waitUntil) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (Interface.isValid()){
+					return true;
+			}
+		}
+		return false;
+	}
+	private boolean waitForContinue(int waitUntil) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if(interfaces.canContinue()){
+					return true;
+			}
+		}
+		return false;
+	}
+	private boolean waitForItem(int id, int waitUntil) {
+		int items = inventory.getCount(true, id);
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (inventory.getCount(true, id) > items || inventory.isFull()){
+					return true;
+			}
+		}
+		return false;
+	}	
+	private boolean waitForDeposit(int id, int waitUntil) {
+		int items = inventory.getCount(id);
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (inventory.getCount(id) == 0 || inventory.getCount(id) < items){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitForAnimation(int animation, int waitUntil) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (getMyPlayer().getAnimation() != animation){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitForCraft(int id, int waitUntil) {
+		int items = inventory.getCount(id);
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (inventory.getCount(id) == 0){
+					return true;
+			}
+		}
+		return false;
+	}	
+
+	private boolean waitForPrayer(int waitUntil) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (skills.getRealLevel(Skills.PRAYER) == skills.getCurrentLevel(Skills.PRAYER)){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitForTeleport(RSTile tile, int waitUntil) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (calc.distanceTo(tile) > 10){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitForSafeRoute(int waitUntil, boolean atAltar) {
+		RSObject inZMIAltar = objects.getNearest(intoZMIAltar);
+		RSObject outZMIAltar = objects.getNearest(outOfZMIAltar);
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if(atAltar && calc.distanceTo(inZMIAltar) < calc.distanceTo(outZMIAltar)){
+				return true;
+			}else if(!atAltar && calc.distanceTo(inZMIAltar) > calc.distanceTo(outZMIAltar)){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void EXPCheck(){
+		if(lastEXP == 0){
+			lastEXP = skills.getCurrentExp(Skills.RUNECRAFTING);
+			lastRecievedEXP = System.currentTimeMillis();
+		}else{
+		if(lastEXP != skills.getCurrentExp(Skills.RUNECRAFTING)){
+			lastEXP = skills.getCurrentExp(Skills.RUNECRAFTING);
+			lastRecievedEXP = System.currentTimeMillis();
+		}
+		if ((System.currentTimeMillis() - lastRecievedEXP )  >= random(780000, 900000)){
+			log("You haven't gained any EXP in the last 13-15 minutes. Now Logging out...");
+			game.logout(true);
+			log("Stopping script.");
+			stopScript();			
+		}			
+		}
+		
+	}
+
+	private void earthStaffCheck() {
+		if(!equipment.containsOneOf(1385)){
+			usingEarthStaff = false;
+			log("No earth staff equipped. Script will withdraw earth runes.");
+		}else{
+			usingEarthStaff = true;
+			log("Earth staff found! Script will not withdraw earth runes.");
+		}	
+	}
+
+	private boolean atLunarIsle(){
+        	return calc.distanceTo(lunarBankTile) <= 30;
+   	}
+
+	private boolean atLunarBank(){
+        	return calc.distanceTo(lunarBankTile) <= 3;
+   	}
+
+	private boolean atZMIAltar(){
+        	return calc.distanceTo(ZMIAltar) <= 5;
+   	}
+
+	private boolean atZMI(){
+        	return ZMIArea.contains(getMyPlayer().getLocation());
+   	}  
+
+	private boolean atSqueezeArea(){
+        	return safeSqueezeArea.contains(getMyPlayer().getLocation());
+   	}  
+
+
+	private boolean atZMIBanker(){
+		RSTile bankerLocation = new RSTile(-1, -1);
+		RSNPC ZMIBank = npcs.getNearest(ZMIBanker);
+		if(ZMIBank == null){
+        		return false;
+		}else{
+			bankerLocation = ZMIBank.getLocation();
+			return calc.distanceTo(bankerLocation) <= 15;
+		}
+   	}
+
+	private boolean atLadderOutside(){
+		if(objects.getNearest(ZMILadderDown) != null && objects.getNearest(ZMILadderDown).isOnScreen())
+			return true;
+		else
+			return false;
+   	}
+
+	private void energyCheck() {
+		if (walking.getEnergy() >= turnOnRunAt) {
+			walking.setRun(true);
+			sleep(random(600,800));
+		}
+	}
+
+	private void walkPath(final RSTile[] path, boolean reverse) {
+		try{
+		RSTilePath actualPath;
+			if(!reverse){
+				actualPath = walking.newTilePath(path);
+				actualPath.randomize(2, 2);
+			}else{
+				actualPath = walking.newTilePath(path);
+				actualPath.reverse();
+				actualPath.randomize(1, 1);
+			}
+		RSTile endPath = actualPath.getEnd();
+		if(!(calc.distanceTo(endPath) < 5)) {
+			energyCheck();
+			if(!getMyPlayer().isMoving() || (calc.distanceTo(walking.getDestination()) <= random(7,9) && calc.distanceBetween(walking.getDestination(), endPath) > 3)){
+				if(!actualPath.traverse())
+				actualPath.traverse();
+			}
+		}
+		}catch (Exception e) {
+			walkPath(path, reverse);
+        	}
+	}
+
+	private String getChatMessages() {
+		try {
+			String text = null;
+			for (int x = 280; x >= 180; x--){
+				if (interfaces.get(137).getComponent(x).getText() != null) {
+					if (interfaces.get(137).getComponent(x).getText().contains("<col=")) {
+						text = interfaces.get(137).getComponent(x).getText();
+						break;
+					}
+				}
+			}
+			return text;
+		} catch (Exception e){}
+		return null;
+	}
+
+	private class ChatResponder extends Thread {
+		boolean run = true;
+		@Override
+		public void run() {
+			while (getChatMessages() == null) {
+				try {
+					Thread.sleep(20);
+				} catch (Exception ignored) {}
+			}
+			while(run) {
+				try{
+					String message = getChatMessages().toLowerCase();
+					if (message != null && !message.equals(previousMessage)) {
+						if (isUsingRemote == true){
+							String[] entireMessage = message.split("<col=");
+							if (entireMessage[0].toLowerCase().contains(remoteName)){
+								if (entireMessage[1].toLowerCase().contains(logoutMessage)){
+									log("Your Character has talked to you with your logout message.");
+										doLogout = true;
+								}else{
+									log("Your Character has talked to you, but without logout message.");
+								}
+							}
+						previousMessage = message;
+						}
+					}
+				}catch (Exception e){}
+			}
+		}
+	}
+
+
+	private class antiBan extends Thread {
+		final char[] upDownRandom = new char[] { KeyEvent.VK_DOWN, KeyEvent.VK_UP };
+		final char[] leftRightRandom = new char[] { KeyEvent.VK_LEFT,KeyEvent.VK_RIGHT };
+		final char[] allKeys = new char[] { KeyEvent.VK_LEFT,KeyEvent.VK_RIGHT, KeyEvent.VK_UP,KeyEvent.VK_UP };
+		final int random1 = random(0, 2);
+		final int random2 = random(0, 2);
+		final int random3 = random(0, 4);
+		int antiBanRandomValue = random(0,25);
+
+		private void mouseMovementAntiBan(){
+			int mouseRandomValue = random(1,2);
+				try{
+				if(mouseRandomValue == 1){
+					mouse.moveRandomly(200);
+				}
+				else if(mouseRandomValue == 2){
+					mouse.moveOffScreen();
+				}
+				}catch (Exception e){}
+		}
+
+		private void cameraMovementAntiBan(){
+			try{
+			if(random(0,5) <= 1){
+				keyboard.pressKey(upDownRandom[random1]);
+				sleep(random(600,800));
+	                    	keyboard.pressKey(leftRightRandom[random2]);
+				sleep(random(600,800));
+				keyboard.releaseKey(leftRightRandom[random2]);
+				sleep(random(100,200));
+				keyboard.releaseKey(upDownRandom[random1]);
+			}else{
+				keyboard.pressKey(allKeys[random3]);
+				sleep(random(800,1000));
+				keyboard.releaseKey(allKeys[random3]);
+			}
+			}catch (Exception e){}
+		}
+
+		private void checkSkillAntiBan(){
+			try{
+			if(random(5,10) == 6 && getMyPlayer().getAnimation() != -1){
+				if(game.getCurrentTab() != Game.TAB_STATS){
+					game.openTab(Game.TAB_STATS);
+					sleep(random(600,800));
+					Point checkRCSkill = new Point(interfaces.get(320).getComponent(104).getAbsoluteX()+20,interfaces.get(320).getComponent(104).getAbsoluteY()+10);
+					mouse.move(checkRCSkill,5,5);
+					sleep(random(600,1000));
+				}
+			}
+			}catch (Exception e){}
+		}
+
+		private void clickPlayerAntiBan(){
+			if(random(0,5) == 2){
+				try{
+				RSPlayer player = players.getNearest(Players.ALL_FILTER);
+				if (player != null) {
+					mouse.move(player.getScreenLocation(), 5, 5);
+					sleep(random(400, 500));
+					mouse.click(false);
+					sleep(random(750, 800));
+					mouse.move(random(10, 450), random(10, 495));
+				}
+				}catch (Exception e){}
+			}
+		}
+
+
+		private void checkFriendsAntiBan(){
+			try{
+			if(game.getCurrentTab() != Game.TAB_FRIENDS){
+				if(random(0,5) == 1){
+					game.openTab(Game.TAB_FRIENDS);
+					sleep(random(1000,2000));
+				}
+			}
+			}catch (Exception e){}
+		}
+
+        	@Override
+        	public void run() {
+			try{
+				if((System.currentTimeMillis() - preformedAntiban) >= (random(35, 80) * 1500) && !getMyPlayer().isMoving() && !getMyPlayer().isInCombat()) {
+					antibanGamble();
+					preformedAntiban = System.currentTimeMillis();
+            			}
+			}catch (Exception e){}
+		}
+
+        	private void antibanGamble() {
+			antiBanRandomValue = random(0,25);
+			if(antiBanRandomValue < 6){
+				mouseMovementAntiBan();
+			}else if(antiBanRandomValue == 9){
+				cameraMovementAntiBan();	
+			}else if(antiBanRandomValue == 18){
+				checkSkillAntiBan();
+			}else if(antiBanRandomValue == 20){
+				clickPlayerAntiBan();
+			}else if(antiBanRandomValue == 12){
+				checkFriendsAntiBan();
+			}
+            	}
+        }
+
+	public void logMeOutAndStop(){
+		if(doLogout == true){
+			if(game.isLoggedIn() && logToLoginScreen == true){
+				env.disbleRandoms();
+				log("Auto-login Disabled");
+				game.logout(false);
+				sleep(random(3000,5000));
+				chatRespond.run = false;
+				stopScript();
+			}else{
+				env.disbleRandoms();
+				log("Auto-login Disabled");
+				game.logout(true);
+				chatRespond.run = false;
+				stopScript();
+			}
+		}
+	}
+
+	public void onFinish() {
+		filledPouch = true;
+		if (remoteLogout.equals("Yes")) {
+			chatRespond.run = false;
+		}
+		log("Thank you for using ZMI Runecrafter");
+		log("You've made "+timesRun+ " runs with " + expGained + "EXP gained and "+actualProfit2+" profit");
+		log("Hope to see you next time!");
+    	}
+
+	private void withdrawRepairRunes(){
+		try{
+			while(bank.isOpen()){
+				if(inventory.getCount() > 25){
+					inventory.getItem(pureEssenceID).doAction("Deposit-5");
+					waitForDeposit(pureEssenceID, random(1500,2000));
+				}
+				if(inventory.getCount(true, airRune) <= 2){
+					withdraw(airRune, 2);
+					waitForItem(airRune, random(2000,2500));
+				}if(inventory.getCount(cosmicRune) < 1){
+					withdraw(cosmicRune, 1);
+					waitForItem(cosmicRune, random(1500,2000));
+				}if(inventory.getCount(astralRune) < 1){
+					withdraw(astralRune, 1);
+					waitForItem(astralRune, random(1500,2000));
+				}
+				if(inventory.getCount(true, airRune) >= 2 && inventory.getCount(astralRune) > 0 && inventory.getCount(cosmicRune) > 0 && bank.isOpen()){
+					bank.close();
+				}
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+	//Deposit Method modeled from RSBot method. All credits go to it's proper owner. Edited by Richard.
+	public void depositAllExcept(int... items) {
+		if(bank.isOpen()){
+			boolean deposit = true;
+			int invCount = bank.isOpen() ? inventory.getCount(true) : bank.getBoxCount();
+			outer:
+			for (int i = 0; i < 28; i++) {
+				RSComponent item = bank.isOpen() ? inventory.getItemAt(i).getComponent()
+						: interfaces.get(11).getComponent(17).getComponent(i);
+				if (item != null && item.getComponentID() != -1) {
+					for (int id : items) {
+						if (item.getComponentID() == id) {
+							continue outer;
+						}
+					}
+					for (int tries = 0; tries < 1; tries++) {
+						if(inventory.getItem(item.getComponentID()).doAction("Deposit-All") || inventory.getItem(item.getComponentID()).doAction("Deposit"));
+						sleep(random(400,500));
+						int cInvCount = bank.isOpen() ? inventory.getCount(true)
+								: bank.getBoxCount();
+						if (cInvCount < invCount) {
+							invCount = cInvCount;
+							continue outer;
+						}
+					}
+					deposit = false;
+				}
+			}
+		}
+	}
+
+
+
+/**
+	 * Tries to withdraw an item.
+	 * <p/>
+	 * 0 is All. 1,5,10 use Withdraw 1,5,10 while other numbers Withdraw X.
+	 *
+	 * @param itemID The ID of the item.
+	 * @param count  The number to withdraw.
+	 * @return <tt>true</tt> on success.
+	 */
+	public boolean withdraw(final int itemID, final int count) {
+		if (bank.isOpen()) {
+			if (count < 0) {
+				throw new IllegalArgumentException("count < 0 (" + count + ")");
+			}
+
+			RSComponent item = bank.getItem(itemID).getComponent();
+			if (item == null) {
+				return false;
+			}
+
+			int invCount = inventory.getCount(true);
+			switch (count) {
+				case 0: // All
+					item.doAction("Withdraw-All");
+					waitForItem(itemID, random(2000,3000));
+					sleep(random(100,200));
+					break;
+				case 1:
+					item.doClick(true);
+					waitForItem(itemID, random(2000,3000));
+					sleep(random(100,200));
+					break;
+				case 5:
+				case 10:
+					item.doAction("Withdraw-" + count);
+					waitForItem(itemID, random(2000,3000));
+					sleep(random(100,200));
+					break;
+				default:
+					if (!item.doAction("Withdraw-" + count)) {
+						if (item.doAction("Withdraw-X")) {
+							sleep(random(1000, 1300));
+							keyboard.sendText(String.valueOf(count), true);
+						}
+					}
+					waitForItem(itemID, random(2000,3000));
+					sleep(random(100,200));
+			}
+			sleep(random(100,200));
+			int cInvCount = inventory.getCount(true);
+			return cInvCount < invCount || cInvCount == 28;
+		}
+		return false;
+	}
+
+
+	private void depositRunes(){ // 0 = Lunar 1 = ZMI
+		try{
+			if(bank.isOpen()){
+				if(isfullBank){
+					bank.depositAll();
+				}else{
+					if(bankMethod == 0){
+						if(usingEarthStaff){
+							depositAllExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, astralRune, lawRune);
+						}else{
+							depositAllExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, astralRune, earthRune, lawRune);
+						}
+						if(inventory.getCount(true, lawRune) >= 7 && inventory.getItem(lawRune).doAction("Deposit-5")){
+							waitForDeposit(lawRune, random(2000,2500));
+						}
+						if(inventory.getCount(true, earthRune) >= 20 && inventory.getItem(earthRune).doAction("Deposit-10")){
+							waitForDeposit(earthRune, random(2000,2500));
+						}
+						if(inventory.getCount(true, astralRune) >= 7 && inventory.getItem(astralRune).doAction("Deposit-5")){
+							waitForDeposit(astralRune, random(2000,2500));
+						}
+					}else if(bankMethod == 1){
+						if(!useOuraniaTeleport){
+							depositAllExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, requiredRune);
+						}else{
+							if(usingEarthStaff){
+								depositAllExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, astralRune, lawRune, requiredRune);
+							}else{
+								depositAllExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, astralRune, earthRune, lawRune, requiredRune);
+							}
+							if(inventory.getCount(true, lawRune) >= 7 && inventory.getItem(lawRune).doAction("Deposit-5")){
+								waitForDeposit(lawRune, random(2000,2500));
+							}
+							if(inventory.getCount(true, earthRune) >= 20 && inventory.getItem(earthRune).doAction("Deposit-10")){
+								waitForDeposit(earthRune, random(2000,2500));
+							}
+							if(inventory.getCount(true, astralRune) >= 7 && inventory.getItem(astralRune).doAction("Deposit-5")){
+								waitForDeposit(astralRune, random(2000,2500));
+							}
+						}
+					}
+				}
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+
+	private void withdrawFoodandEat(){
+		try{
+			if(bank.isOpen()){
+				while(combat.getHealth() < random(90,100)){
+					if(!inventory.contains(foodID) && withdraw(foodID, 1)){
+						waitForItem(foodID, random(2000,2500));
+					}
+					else if(inventory.contains(foodID)){
+						inventory.getItem(foodID).doAction("Eat");
+						waitForDeposit(foodID, random(1500,2500));
+					}
+				}
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+
+	private void withdrawRequiredRunes(){
+		try{
+			if(bank.isOpen()){
+				if(bankMethod == 0){
+					if(inventory.isFull()){
+						inventory.getItem(pureEssenceID).doAction("Deposit-5");
+						waitForDeposit(pureEssenceID, random(2000,2500));
+					}
+					if(inventory.getCount(true, astralRune) <= 2 && withdraw(astralRune, 5)){
+						waitForItem(astralRune, random(2000,2500));
+					}
+					if(inventory.getCount(true, lawRune) <= 1 && withdraw(lawRune, 2)){
+						waitForItem(lawRune, random(2000,2500));
+					}
+					if(!usingEarthStaff && inventory.getCount(true, earthRune) <= 9 && withdraw(earthRune, 10)){
+						waitForItem(earthRune, random(2000,2500));
+					}
+				}else if(bankMethod == 1){
+					if(useOuraniaTeleport){
+						if(inventory.getCount(true, astralRune) <= 2 && withdraw(astralRune, 2)){
+							waitForItem(astralRune, random(2000,2500));
+						}
+						if(inventory.getCount(true, lawRune) <= 1 && withdraw(lawRune, 1)){
+							waitForItem(lawRune, random(2000,2500));
+						}
+						if(!usingEarthStaff && inventory.getCount(true, earthRune) <= 9 && withdraw(earthRune, 10)){
+							waitForItem(earthRune, random(2000,2500));
+						}
+					}
+					if(inventory.getCount(true, requiredRune) < 20 && withdraw(requiredRune, 10)){
+						waitForItem(requiredRune, random(2000,2500));
+					}
+				}
+			}else{
+				openBank();
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+
+	private void withdrawEssence(){
+		try{
+			if(bank.isOpen()){
+				if(withdraw(pureEssenceID, 0)){
+					waitForItem(pureEssenceID, random(2500,3000));
+				}
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+
+	public void checkSmall(){
+		if(inventory.contains(smallID)){
+			useSmallPouch = true;
+			checkedSmall = true;
+			pouchCount = pouchCount+1;
+		}else{
+			checkedSmall = true;
+		}
+	}
+
+	public void checkMedium(){
+		if(inventory.contains(medID) || inventory.contains(medBrokenID)){
+			useMediumPouch = true;
+			checkedMedium = true;
+			pouchCount = pouchCount+1;
+		}else{
+			checkedMedium = true;
+		}
+	}
+	
+	public void checkLarge(){
+		if(inventory.contains(largeID) || inventory.contains(largeBrokenID)){
+			useLargePouch = true;
+			checkedLarge = true;
+			pouchCount = pouchCount+1;
+		}else{
+			checkedLarge = true;
+		}
+	}
+
+	public void checkGiant(){
+		if(inventory.contains(giantID) || inventory.contains(giantBrokenID)){
+			useGiantPouch = true;
+			checkedGiant = true;
+			pouchCount = pouchCount+1;
+		}else{
+			checkedGiant = true;
+		}
+	}
+	
+	public void getPouches(){
+		try{
+			status = "Counting Pouches";
+			if(!checkedSmall){
+				checkSmall();
+			}
+			if(!checkedMedium){
+				checkMedium();
+			}
+			if(!checkedLarge){
+				checkLarge();
+			}
+			if(!checkedGiant){
+				checkGiant();
+			}
+			if(checkedSmall && checkedMedium && checkedLarge && checkedLarge){
+				log("Finished Checking Pouches");
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+	public void fillSmall(){
+		try{
+			if(inventory.getItem(smallID).doAction("Fill")){
+				fullPouchCount = fullPouchCount+1;
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+
+	public void fillMedium(){
+		try{
+			if(inventory.getCount(pureEssenceID) < 6){
+				withdrawEssence();
+			}
+			if(inventory.getCount(pureEssenceID) >= 6){
+				if(inventory.contains(medID) && inventory.getItem(medID).doAction("Fill")){
+					fullPouchCount = fullPouchCount+1;
+				}else if(inventory.contains(medBrokenID) && inventory.getItem(medBrokenID).doAction("Fill")){
+					fullPouchCount = fullPouchCount+1;
+				}
+			}
+		}catch (Exception e) { 
+		}
+	}
+	
+	public void fillLarge(){
+		try{
+			if(inventory.getCount(pureEssenceID) >= 9){
+				if(inventory.contains(largeID) && inventory.getItem(largeID).doAction("Fill")){
+					fullPouchCount = fullPouchCount+1;
+				}
+				else if(inventory.contains(largeBrokenID) && inventory.getItem(largeBrokenID).doAction("Fill")){
+					fullPouchCount = fullPouchCount+1;
+				}
+			}
+			withdrawEssence();
+		}catch (Exception e) { 
+		}
+	}
+
+	public void fillGiant(){
+		try{
+			sleep(random(200,300));
+			filledPouch = false;
+			while(!filledPouch){
+				if(inventory.getCount(pureEssenceID) >= 12){
+					if(inventory.contains(giantID) && inventory.getItem(giantID).doAction("Fill")){
+						waitForDeposit(pureEssenceID, random(1500,2000));
+					}else if(inventory.contains(giantBrokenID) && inventory.getItem(giantBrokenID).doAction("Fill")){
+						waitForDeposit(pureEssenceID, random(1500,2000));
+					}
+				}else if(inventory.getCount(pureEssenceID) < 12){
+					withdrawEssence();
+				}
+			}
+			fullPouchCount = fullPouchCount+1;
+		}catch (Exception e) { 
+		}
+	}
+
+	public void fillPouches(){
+		try{
+			status = "Filling pouches";
+			if(useSmallPouch){
+				fillSmall();
+			}
+			if(useMediumPouch){
+				fillMedium();
+			}
+			if(useLargePouch){
+				fillLarge();
+			}
+			if(useGiantPouch){
+				fillGiant();
+			}
+			emptyPouchCount = 0;
+		}catch (Exception e) { 
+		}
+	}
+
+
+	public void emptySmall(){
+		try{
+			status = "Emptying pouches";
+			sleep(random(200,300));
+			filledPouch = false;
+			calculatedEssence = false;
+			while(!filledPouch){
+				if(inventory.getCount() > 25){
+					craftRunes();
+				}
+				if(inventory.getItem(smallID).doAction("Empty")){
+					waitForItem(pureEssenceID, random(1500,2000));
+				}
+			}
+			emptyPouchCount = emptyPouchCount+1;
+		}catch (Exception e) { 
+		}
+	}
+
+
+	public void emptyMedium(){
+		try{
+			sleep(random(200,300));
+			filledPouch = false;
+			calculatedEssence = false;
+			while(!filledPouch){
+				if(inventory.getCount() <= 22){
+					if(inventory.contains(medID) && inventory.getItem(medID).doAction("Empty")){
+						waitForItem(pureEssenceID, random(1500,2000));
+					}else if(inventory.contains(medBrokenID) && inventory.getItem(medBrokenID).doAction("Empty")){
+						waitForItem(pureEssenceID, random(1500,2000));
+					}
+				}else if(inventory.getCount() > 22){
+					craftRunes();
+				}
+			}
+			emptyPouchCount = emptyPouchCount+1;
+		}catch (Exception e) { 
+		}
+	}
+	
+	public void emptyLarge(){
+		try{
+			sleep(random(200,300));
+			filledPouch = false;
+			calculatedEssence = false;
+			while(!filledPouch){
+				if(inventory.getCount() <= 19){
+					if(inventory.contains(largeID) && inventory.getItem(largeID).doAction("Empty")){
+						waitForItem(pureEssenceID, random(1500,2000));
+					}else if(inventory.contains(largeBrokenID) && inventory.getItem(largeBrokenID).doAction("Empty")){
+						waitForItem(pureEssenceID, random(1500,2000));
+					}
+				}else if(inventory.getCount() > 19){
+					craftRunes();
+				}
+			}
+			emptyPouchCount = emptyPouchCount+1;
+		}catch (Exception e) { 
+		}
+	}
+
+	public void emptyGiant(){
+		try{
+			sleep(random(200,300));
+			filledPouch = false;
+			calculatedEssence = false;
+			while(!filledPouch){
+				if(inventory.getCount() <= 20){
+					if(inventory.contains(giantID) && inventory.getItem(giantID).doAction("Empty")){
+						waitForItem(pureEssenceID, random(1500,2000));
+					}else if(inventory.contains(giantBrokenID) && inventory.getItem(giantBrokenID).doAction("Empty")){
+						waitForItem(pureEssenceID, random(1500,2000));
+					}
+				}else if(inventory.getCount() > 16){
+					craftRunes();
+				}
+			}
+			emptyPouchCount = emptyPouchCount+1;
+		}catch (Exception e) { 
+		}
+	}
+
+	public void emptyPouches(){
+		try{
+			if(useGiantPouch){
+				emptyGiant();
+			}
+			if(useSmallPouch){
+				emptySmall();
+			}
+			if(useMediumPouch){
+				emptyMedium();
+			}
+			if(useLargePouch){
+				emptyLarge();
+			}
+			fullPouchCount = 0;
+		}catch (Exception e) { 
+		}
+	}
+		
+	public void calculatePrices(boolean subtractPrices){
+		if(!subtractPrices){
+			if(timesCrafted > 0){
+				profit = profit + (waterRunePrice*inventory.getCount(true, waterRune));
+				profit = profit + (earthRunePrice*inventory.getCount(true, earthRune));
+				profit = profit + (lawRunePrice*inventory.getCount(true, lawRune));
+				profit = profit + (cosmicRunePrice*inventory.getCount(true, cosmicRune));
+				profit = profit + (astralRunePrice*inventory.getCount(true, astralRune));
+				profit = profit + (bloodRunePrice*inventory.getCount(true, bloodRune));
+				profit = profit + (natureRunePrice*inventory.getCount(true, natureRune));
+				profit = profit + (soulRunePrice*inventory.getCount(true, soulRune));
+				profit = profit + (deathRunePrice*inventory.getCount(true, deathRune));
+				profit = profit + (chaosRunePrice*inventory.getCount(true, chaosRune));
+			}
+			if(requiredRune == airRune){  // Air
+				profit = profit + (airRunePrice*(inventory.getCount(true, airRune) - 20) - (airRunePrice*20));
+			}else{
+				profit = profit + (airRunePrice*inventory.getCount(true, airRune));
+			}
+			if(requiredRune == fireRune){  // Fire
+				profit = profit + (fireRunePrice*(inventory.getCount(true, fireRune) - 20) - (fireRunePrice*20));
+			}else{
+				profit = profit + (fireRunePrice*inventory.getCount(true, fireRune));
+			}
+			if(requiredRune == bodyRune){  // Body
+				profit = profit + (bodyRunePrice*(inventory.getCount(true, bodyRune) - 20) - (bodyRunePrice*20));
+			}else{
+				profit = profit + (bodyRunePrice*inventory.getCount(true, bodyRune));
+			}
+			if(requiredRune == mindRune){  // Mind
+				profit = profit + (mindRunePrice*(inventory.getCount(true, mindRune) - 20) - (mindRunePrice*20));
+			}else{
+				profit = profit + (mindRunePrice*inventory.getCount(true, mindRune));
+				timesCrafted = 0;
+			}
+			if(bankMethod == 0){
+				profit = profit - (earthRunePrice*10) - (astralRunePrice*5) - (lawRunePrice*2);
+			}
+		}
+	}
+	public void teleToZMI(){
+		try{
+			if(bank.isOpen()){
+				bank.close();
+			}
+			if(game.getCurrentTab() != Game.TAB_MAGIC) {
+				game.openTab(Game.TAB_MAGIC);
+			}
+			if(magic.castSpell(Magic.SPELL_OURANIA_TELEPORT)){
+				waitForTeleport(getMyPlayer().getLocation(), random(3000,4000));
+				sleep(random(200,300));
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+	public void teleLunarIsle(){
+		try{
+			if(bank.isOpen()){
+				status = "Error!";
+			}
+			if(!atLunarIsle()){
+				if(game.getCurrentTab() != Game.TAB_MAGIC) {
+					game.openTab(Game.TAB_MAGIC);
+				}
+				if(magic.castSpell(Magic.SPELL_TELE_GROUP_MOONCLAN))
+				waitForTeleport(getMyPlayer().getLocation(), random(3000,4000));
+			}else{
+				sleep(random(200,300));
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+
+	private void repairPouches(){
+		try{
+		status = "Repairing pouches";
+		if(bank.isOpen()){
+			bank.close();
+		}
+		if(game.getCurrentTab() != Game.TAB_MAGIC) {
+			game.openTab(Game.TAB_MAGIC);
+		}
+		if(magic.castSpell(Magic.SPELL_NPC_CONTACT)){
+			waitForInterface(interfaces.get(88), random(2000,3000));
+			sleep(random(300,400));
+		}
+
+		if(interfaces.get(88).isValid()){
+			Point scrollBar = interfaces.get(88).getComponent(20).getComponent(1).getLocation();
+			Point dragTo = interfaces.get(88).getComponent(9).getLocation();
+				mouse.move(scrollBar, 5, 25);
+				mouse.drag(dragTo);
+				sleep(random(1000,1500));
+				interfaces.get(88).getComponent(22).getComponent(4).doClick();
+				waitForContinue(random(6000,8000));
+				sleep(random(200,300));
+
+			while(interfaces.canContinue()){
+				interfaces.clickContinue();
+				sleep(random(300,500));
+				waitForContinue(random(3000,4000));
+				sleep(random(400,600));
+			}
+			if(interfaces.get(230).getComponent(3).isValid() && interfaces.get(230).getComponent(3).containsText("Can you repair my pouches?")){
+				interfaces.get(230).getComponent(3).doClick();
+				waitForContinue(random(2000,3000));
+
+			}else if(interfaces.get(228).getComponent(2).isValid() && interfaces.get(228).getComponent(2).containsText("Can you repair my pouches?")){
+				interfaces.get(228).getComponent(2).doClick();
+				waitForContinue(random(2000,3000));
+				sleep(random(300,400));
+			}
+			sleep(random(200,300));
+			if(interfaces.canContinue()){
+				sleep(random(100,200));
+				interfaces.clickContinue();
+				sleep(random(100,200));
+			}
+			sleep(random(200,300));
+			pouchesRepaired++;
+		}
+		}catch (Exception e) { 
+		}
+	}
+
+	public void openBank(){
+		try{
+			status = "Banking";
+			if(bankMethod == 0){
+				RSObject bankBooth = objects.getNearest(lunarBankBoothID);
+				objectTile = bankBooth.getLocation();
+				if(!bank.isOpen() && bankBooth.isOnScreen()){
+					if(tiles.doAction(objectTile, "Use-quickly")){
+						waitForInterface(interfaces.get(762), random(2000,3000));
+						sleep(random(300,400));
+					}
+				}
+
+			}else if(bankMethod == 1){
+				if(bankFailSafe >= 20){
+					camera.turnToCharacter(npcs.getNearest(ZMIBanker));
+					walking.walkPathMM(walking.findPath(npcs.getNearest(ZMIBanker).getLocation()));
+				}
+				if(!npcs.getNearest(ZMIBanker).isOnScreen() || calc.distanceTo(npcs.getNearest(ZMIBanker)) > 4){
+					walkPath(walking.findPath(npcs.getNearest(ZMIBanker).getLocation()), false);
+				}else{
+					if(!interfaces.get(619).isValid() && npcs.getNearest(ZMIBanker).doAction("Bank")){
+						waitForInterface(interfaces.get(619), random(2000,3000));
+						sleep(random(100,200));
+						return;
+					}else{
+						interfaces.get(619).getComponent(bankRune).doClick();
+						waitForInterface(interfaces.get(762), random(2000,3000));
+						sleep(random(300,400));
+					}
+					bankFailSafe++;	
+				}
+			}
+
+		}catch (Exception e) { 
+		}
+	}
+
+
+	private void climbUp(){
+		try{
+			if(bank.isOpen()){
+				bank.close();
+			}
+			if(skills.getCurrentLevel(Skills.PRAYER) <= 18){
+				RSObject ZMILadder = objects.getNearest(ZMILadderUp);
+				objectTile = ZMILadder.getLocation();
+				status = "Climbing Up Ladder";
+				if(ZMILadder.isOnScreen()){
+					if(tiles.doAction(objectTile, "Climb") || ZMILadder.doAction("Climb")){
+						waitForTeleport(getMyPlayer().getLocation(), random(4000,5000));
+						sleep(random(200,300));
+					}
+				}else{
+					walking.walkTo(objectTile);
+					sleep(random(100,200));
+					return;
+				}
+			}
+		}catch (Exception e) { 
+		}
+	}
+	
+	private void safeRouteAction(){
+		status = "Crawling through the hole";
+		RSObject inZMIAltar = objects.getNearest(intoZMIAltar);
+		RSObject outZMIAltar = objects.getNearest(outOfZMIAltar);
+			if(calc.distanceTo(inZMIAltar) < calc.distanceTo(outZMIAltar)){ // Further from altar
+				if(inventory.contains(pureEssenceID)){
+					inZMIAltar.doAction("Squeeze-through");
+					waitForSafeRoute(random(2500,3000), false);
+				}else{
+					status = "Walking to ZMI bank - Safe";
+				}
+			}else if(calc.distanceTo(inZMIAltar) > calc.distanceTo(outZMIAltar)){ // Closer to altar
+				if(inventory.contains(pureEssenceID)){
+					RSObject craftAltar = objects.getTopAt(ZMIAltar);
+					walking.walkTileMM(craftAltar.getLocation());
+				}else{
+					outZMIAltar.doAction("Squeeze-through");
+					waitForSafeRoute(random(2500,3000), true);
+				}
+			}
+	}
+
+	private void climbOrPray(){
+		try{
+			if(skills.getCurrentLevel(Skills.PRAYER) <= 18 && isUsingPrayer){
+				RSObject prayerAltar = objects.getNearest(ZMIPrayerAltar);
+				objectTile = prayerAltar.getLocation();
+				status = "Recharging Prayer";
+				if(prayerAltar.isOnScreen()){
+					if(tiles.doAction(objectTile, "Pray-at") || prayerAltar.doAction("Pray-at")){
+						waitForPrayer(random(2000,4000));
+						sleep(random(200,300));
+					}
+				}
+			}else{
+				status = "Climbing Ladder";
+				objectTile = objects.getNearest(ZMILadderDown).getLocation();
+				if(objects.getNearest(ZMILadderDown).doAction("Climb")){
+					waitForTeleport(getMyPlayer().getLocation(), random(3000,4000));
+				}
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+	private void craftRunes(){
+		try{
+		RSObject craftAltar = objects.getTopAt(ZMIAltar);
+		objectTile = ZMIAltar;
+			if(craftAltar.isOnScreen()){
+				while(craftAltar.isOnScreen() && inventory.contains(pureEssenceID)){
+				status = "Crafting runes";
+					if(!calculatedEssence){
+						essenceUsed = essenceUsed+inventory.getCount(pureEssenceID);
+					}
+					if(tiles.doAction(objectTile, "Craft") || craftAltar.doAction("Craft")){
+						waitForCraft(pureEssenceID, random(2000,3000));
+						sleep(random(200,400));
+						timesCrafted++;
+					}
+				}
+			}else{
+				walkPath(walking.findPath(ZMIAltar), false);
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+	private boolean quickPrayerCheck() {
+		if(interfaces.get(749).getComponent(2).getBackgroundColor() == 1209){
+			return true; // off
+		}else{
+			return false; //On
+		}
+	}
+
+	private void quickPrayer(boolean turnOn){
+		try{
+			if(isUsingPrayer){
+				if(turnOn && quickPrayerCheck()){
+					if(skills.getCurrentLevel(Skills.PRAYER) >= 1){
+						interfaces.get(749).getComponent(1).doClick(true);
+						sleep(random(400,500));
+						return;
+					}
+				}else if(!turnOn && !quickPrayerCheck()){
+					interfaces.get(749).getComponent(1).doClick(true);
+					sleep(random(400,500));
+					return;
+				}
+			}else{
+				return;
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+	public int loop() {
+		mouse.setSpeed(random(6,8));
+		try{
+		if (!game.isLoggedIn()){
+            			return 100;
+		}
+		if(!checkedSmall || !checkedMedium || !checkedLarge || !checkedGiant){
+			getPouches();
+		}
+
+		if(atLunarIsle()){
+			if(atLunarBank()){
+				if(inventory.getCount(true, astralRune) <= 4 || inventory.getCount(true, lawRune) <= 1 || (!usingEarthStaff && inventory.getCount(true, earthRune) <= 9) || !inventory.isFull() || fullPouchCount < pouchCount){
+					if(bank.isOpen()){
+						if(combat.getLifePoints() <= hpBelow+random(-10,10)){
+							withdrawFoodandEat();
+							return 20;
+						}
+						if((inventory.contains(giantBrokenID) || inventory.contains(largeBrokenID) || inventory.contains(medBrokenID)) && fullPouchCount < pouchCount && isRepairingPouches){
+							if(inventory.getCount(true, airRune) < 2 || inventory.getCount(cosmicRune) < 1 || inventory.getCount(astralRune) < 1){
+								withdrawRepairRunes();
+								return 20;
+							}else{
+								repairPouches();
+								return 20;
+							}
+						}
+						if(inventory.getCountExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, astralRune, earthRune, lawRune) >= 1){
+							depositRunes();	
+							return 20;
+						}
+						if(inventory.getCount(true, astralRune) <= 4 || inventory.getCount(true, lawRune) <= 1 || (!usingEarthStaff && inventory.getCount(true, earthRune) <= 9)){
+							withdrawRequiredRunes();
+							return 20;
+						}
+						if(fullPouchCount < pouchCount && inventory.isFull()){
+							fillPouches();
+							waitForDeposit(pureEssenceID, random(1500,2000));
+							return 20;
+						}
+						if(!inventory.isFull()){
+							withdrawEssence();
+							return 20;
+						}
+					}else{
+						if((inventory.contains(giantBrokenID) || inventory.contains(largeBrokenID)  || inventory.contains(medBrokenID)) && fullPouchCount < pouchCount && isRepairingPouches){
+							if(inventory.getCount(true, airRune) >= 2 && inventory.getCount(cosmicRune) >= 1 && inventory.getCount(astralRune) >= 1){
+								repairPouches();
+								return 20;
+							}else{
+								openBank();
+							}
+						}
+						if(timesCrafted > 0){
+							calculatePrices(false);
+							return 20;
+						}
+						openBank();
+						return 20;
+					}
+				}else{
+					teleToZMI();
+					return 20;
+				}
+			}else{
+				status = "Walking to Lunar Isle bank";
+			}
+			
+		}else if(atZMI()){
+			if(atZMIAltar()){
+				if(inventory.contains(pureEssenceID)){
+					if(isUsingPrayer && !quickPrayerCheck()){
+						quickPrayer(false);
+						return 20;
+					}
+					craftRunes();
+					return 20;
+				}
+				if(emptyPouchCount < pouchCount){
+					emptyPouches();
+				}
+				if(emptyPouchCount >= pouchCount && !inventory.contains(pureEssenceID)){
+						calculatedEssence = false;
+					if(bankMethod == 0){
+						teleLunarIsle();
+					}else{
+						if(useOuraniaTeleport){
+							teleToZMI();
+							sleep(random(500,800));
+							return 20;
+						}else{
+							if(isUsingPrayer && quickPrayerCheck()){
+								quickPrayer(true);
+								return 20;
+							}
+							if(!issafeRoute){
+								status = "Walking to ZMI bank";
+							}else{
+								status = "Walking to safe route";
+							}
+						}
+					}
+				}
+			}else if(atZMIBanker()){
+				if(((inventory.getCount(true, requiredRune) < 20 || !inventory.isFull() || fullPouchCount < pouchCount) || (useOuraniaTeleport && (inventory.getCount(true, lawRune) < 1 || inventory.getCount(true, astralRune) < 2 || (!usingEarthStaff && inventory.getCount(true, earthRune) < 1)))) && bankMethod == 1){
+					if(bank.isOpen()){
+						bankFailSafe = 0;
+						if(combat.getLifePoints() <= hpBelow){
+							withdrawFoodandEat();
+							return 20;
+						}
+						if((inventory.contains(giantBrokenID) || inventory.contains(largeBrokenID) || inventory.contains(medBrokenID)) && fullPouchCount < pouchCount && isRepairingPouches){
+							if(inventory.getCount(true, airRune) < 2 || inventory.getCount(cosmicRune) < 1 || inventory.getCount(astralRune) < 1){
+								if(inventory.getCount(true, requiredRune) < 20){
+								withdrawRequiredRunes();
+								return 20;
+							}
+								withdrawRepairRunes();
+								return 20;
+							}else{
+								repairPouches();
+								return 20;
+							}
+						}
+						if(!useOuraniaTeleport && inventory.getCountExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, requiredRune) >= 1){
+							depositRunes();	
+							return 20;
+						}else if(useOuraniaTeleport && inventory.getCountExcept(pureEssenceID, smallID, medID, largeID, giantID, giantBrokenID, largeBrokenID, medBrokenID, requiredRune, earthRune, astralRune, lawRune) >= 1){
+							depositRunes();	
+							return 20;
+						}
+	
+						if(inventory.getCount(true, requiredRune) < 20 || (useOuraniaTeleport && (inventory.getCount(true, lawRune) < 1 || inventory.getCount(true, astralRune) < 2 || (!usingEarthStaff && inventory.getCount(true, earthRune) < 1)))){
+							withdrawRequiredRunes();
+							return 20;
+						}
+						if(fullPouchCount < pouchCount && inventory.isFull()){
+							fillPouches();
+							waitForDeposit(pureEssenceID, random(1500,2000));
+							return 20;
+						}
+						if(!inventory.isFull()){
+							withdrawEssence();
+							return 20;
+						}
+					}else{
+						if(isUsingPrayer && !quickPrayerCheck()){
+							quickPrayer(false);
+							return 20;
+						}
+						if(timesCrafted > 0){
+							calculatePrices(false);
+							return 20;
+						}
+						if((inventory.contains(giantBrokenID) || inventory.contains(largeBrokenID)  || inventory.contains(medBrokenID)) && fullPouchCount < pouchCount && isRepairingPouches){
+							if(inventory.getCount(true, airRune) >= 2 && inventory.getCount(cosmicRune) >= 1 && inventory.getCount(astralRune) >= 1){
+								repairPouches();
+								return 20;
+							}else{
+								openBank();
+							}
+						}
+						openBank();
+						return 20;
+					}
+				}else{
+					if(isUsingPrayer && skills.getCurrentLevel(Skills.PRAYER) <= 18){
+						climbUp();
+					}else{
+						if(isUsingPrayer && quickPrayerCheck()){
+							quickPrayer(true);
+							return 20;
+						}
+						if(issafeRoute){
+							status = "Walking to ZMI altar - Safe";
+						}else{
+							status = "Walking to ZMI altar";
+						}
+					}
+				}
+			}else{
+				if(inventory.contains(pureEssenceID)){
+					if(isUsingPrayer && quickPrayerCheck()){
+						quickPrayer(true);
+						return 20;
+					}
+					if(issafeRoute){
+						status = "Walking to ZMI altar - Safe";
+					}else{
+						status = "Walking to ZMI altar";
+					}
+				}
+				if(atSqueezeArea()){
+					safeRouteAction();	
+				}
+			}
+		}else{
+			if(atLadderOutside()){
+				climbOrPray();
+			}else{
+				status = "Walking to ladder";	
+			}
+		}
+		if(status.contains("Walking ")){
+			if(status.equals("Walking to ZMI bank")){
+				walkPath(toZMIAltar, true);
+				return 20;
+			}else if(status.equals("Walking to Lunar Isle bank")){
+				walkPath(lunarBankPath, false);
+				return 20;
+			}else if(status.equals("Walking to ZMI altar")){
+				walkPath(toZMIAltar, false);
+				return 20;
+			}else if(status.equals("Walking to ladder")){
+				walkPath(teleLocationToLadder, false);
+				return 20;
+			}else if(status.equals("Walking to ZMI altar - Safe")){
+				walkPath(toZMIAltarSafeRoute, false);
+				return 20;
+			}else if(status.equals("Walking to ZMI bank - Safe")){
+				walkPath(toZMIAltarSafeRoute, true);
+				return 20;
+			}else if(status.equals("Walking to safe route")){
+				walkPath(toZMISafeRoute, false);
+				return 20;
+			}
+		}
+		}catch (Exception e) { 
+		}
+		return 100;
+	}
+
+
+    
+	//Paint Details
+	private String getFormattedTime(final long timeMillis) {
+        long jmillis = timeMillis;
+        final long seconds2 = jmillis / 1000;
+        final long hours = jmillis / (1000 * 60 * 60);
+        jmillis -= hours * 1000 * 60 * 60;
+        final long minutes = jmillis / (1000 * 60);
+        jmillis -= minutes * 1000 * 60;
+        final long seconds = jmillis / 1000;
+        String hoursString = "";
+        String minutesString = "";
+        String secondsString = seconds + "";
+        String type = "seconds";
+
+        if (minutes > 0) {
+            minutesString = minutes + ":";
+            type = "minutes";
+        } else if (hours > 0 && seconds2 > 0) {
+            minutesString = "0:";
+        }
+        if (hours > 0) {
+            hoursString = hours + ":";
+            type = "hours";
+        }
+        if (minutes < 10 && !type.equals("seconds")) {
+            minutesString = "0" + minutesString;
+        }
+        if (hours < 10 && type.equals("hours")) {
+            hoursString = "0" + hoursString;
+        }
+        if (seconds < 10 && !type.equals("seconds")) {
+            secondsString = "0" + secondsString;
+        }
+
+        if (timeMillis == 1000) {
+            type = "second";
+        } else if (timeMillis == 60000) {
+            type = "minute";
+        } else if (timeMillis == 3600000) {
+            type = "hour";
+        }
+
+        return hoursString + minutesString + secondsString + " " + type;
+    }
+
+
+ @Override
+ public void onRepaint(Graphics g) {
+		if (!game.isLoggedIn())
+			return;
+
+		g.setColor(new Color(60, 155, 170, 130));
+		g.drawLine(0, (int) mouse.getLocation().getY(), game.getWidth(), (int) mouse.getLocation().getY());
+		g.drawLine((int) mouse.getLocation().getX(), 0, (int) mouse.getLocation().getX(), game.getHeight()); 
+		if (startLevel == 0) {
+			startXP = skills.getCurrentExp(Skills.RUNECRAFTING);
+			startLevel = skills.getCurrentLevel(Skills.RUNECRAFTING);
+		}
+		currentLVL = skills.getCurrentLevel(Skills.RUNECRAFTING);
+		levelsGained = currentLVL - startLevel;
+		XPToLevel = skills.getExpToNextLevel(Skills.RUNECRAFTING);
+		percentTillLevel = skills.getPercentToNextLevel(Skills.RUNECRAFTING);
+		currentXP = skills.getCurrentExp(Skills.RUNECRAFTING);
+		final long XPgained = currentXP - startXP;
+		expGained = XPgained;
+		long seconds = 0;
+		long minutes = 0;
+		long hours = 0;
+		Font font;
+		int actualProfit = profit - (pouchesRepaired*(airRunePrice*2 + cosmicRunePrice + astralRunePrice) - (essenceUsed*essencePrice));
+		actualProfit2 = actualProfit;
+		final NumberFormat nf = NumberFormat.getInstance();
+		nf.setMinimumIntegerDigits(2);
+		final long runTime = System.currentTimeMillis() - startTime;
+		seconds = runTime / 1000;
+		float profitPerSecond = 0;
+		profitPerSecond = ((float) actualProfit)/(float)(seconds + (minutes*60) + (hours*60*60)); 
+		float profitPerMin = profitPerSecond * 60;
+		float profitPerHour = profitPerMin * 60;
+
+
+		if ( seconds >= 60 ) {
+			minutes = seconds / 60;
+			seconds -= (minutes * 60);
+		}
+		if ( minutes >= 60 ) {
+			hours = minutes / 60;
+			minutes -= (hours * 60);
+		}
+		
+		if ((runTime / 1000) > 0) 
+		{
+			xpPerHour = (int) ((3600000.0 / (double) runTime) * XPgained);
+		}
+
+			//Borders
+			g.setColor(Color.WHITE);
+			g.drawRoundRect(4, 4, 70, 20, 10, 10);
+			g.drawRoundRect(75, 4, 70, 20, 10, 10);
+			g.drawRoundRect(146, 4, 70, 20, 10, 10);
+			g.drawRoundRect(217, 4, 70, 20, 10, 10);
+			
+			// Backgrounds
+                        g.setColor(new Color(0, 0, 0, 130));
+			g.fillRoundRect(4, 4, 70, 20, 10, 10);
+			g.fillRoundRect(75, 4, 70, 20, 10, 10);
+			g.fillRoundRect(146, 4, 70, 20, 10, 10);
+			g.fillRoundRect(217, 4, 70, 20, 10, 10);
+
+
+
+			//Drawings
+			g.setColor(Color.white);
+			g.setFont(new Font("Calibri", Font.BOLD, 12));
+			g.drawString("Genral", 10, 22);
+			g.drawString("Economy", 81, 22);
+			g.drawString("Experience", 152, 22);
+			g.drawString("Hide Paint", 223, 22);
+
+ 		if(showPaint == true) {
+				g.setColor(Color.WHITE);
+				g.drawRoundRect(4, 25, 283, 110, 10, 10);
+				g.drawRoundRect(4, 135, 283, 30, 10, 10);
+				g.setColor(new Color(0, 0, 0, 130));
+				g.fillRoundRect(4, 25, 283, 110, 10, 10);
+				g.fillRoundRect(4, 135, 283, 30, 10, 10);
+				g.setColor(Color.white);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString("Auth Code: " +authCode, 15, 149);
+				g.drawString("IP: " +ipAddress, 15, 162);
+                	if(showPaintID == 1){
+				g.setColor(Color.white);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 11));
+				g.drawString(""  +Title1, 40, 40);
+				g.drawString("" + Title2, 40, 55);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString("Status: " + status, 15, 127);
+				g.drawString("Time running: " + hours + ":" + nf.format(minutes) + ":" + nf.format(seconds), 15, 75);
+				g.drawString("Using " +pouchCount+ " pouches", 15, 88);
+				if(isRepairingPouches){
+					g.drawString("Pouches Repaired: " + pouchesRepaired+ " times", 15, 101);
+				}else{
+					g.drawString("Not repairing pouches", 15, 101);
+				}
+				g.drawString("Completed " +timesRun+ " runs", 15, 114);
+			}
+                	if(showPaintID == 2){
+				g.setColor(Color.white);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 11));
+				g.drawString(""  +Title1, 40, 40);
+				g.drawString("" + Title2, 40, 55);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString("Essence used: " + essenceUsed, 15, 88);
+				g.drawString("Total Profit: " + actualProfit, 15, 101);
+				g.drawString("Profit per hour: " + (int)profitPerHour, 15, 114);
+				g.drawString("Inventory", 223, 75);
+				g.drawString("Contains: ", 230, 88);
+				g.drawString("Status: " + status, 15, 127);
+				g.setColor(Color.RED);
+				g.drawString(numberOfInvenItems + " Items", 230, 101);
+			}
+                	if(showPaintID == 3){
+				g.setColor(Color.white);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 11));
+				g.drawString(""  +Title1, 40, 40);
+				g.drawString("" + Title2, 40, 55);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString("Experience gained: " + XPgained , 15, 75);
+				g.drawString("EXP P/H: " + xpPerHour, 15, 88);
+				g.drawString("Percent to next level: ", 15, 114);
+				g.drawString("Status: " + status, 15, 127);
+				g.drawString("Current Level: ", 160, 88);
+				g.drawString(""+currentLVL+"("+levelsGained+")", 245, 88);
+				if (XPgained >= 100) {
+					final long jmillis2 = (System.currentTimeMillis() - startTime);
+					final int XPPerSecond = (int) (XPgained * 1000 / jmillis2); 
+					final int SecsToLevel = XPToLevel / XPPerSecond;
+					g.drawString("Next level in " + getFormattedTime(SecsToLevel * 1000), 15, 101);
+					} else {
+					g.drawString("Calculating time until next level...", 15, 101);
+				}
+				g.drawRect(145,104,100,12);
+                          	g.setColor(new Color(0,0,0,0));
+                         	g.fillRect(146,105,99,11);
+                          	double percentUntilLevel = .99*percentTillLevel;
+                          	g.setColor(new Color(60, 155, 170, 130));
+                          	g.fillRect(146,105,(int)percentUntilLevel,11);
+				g.setColor(Color.red);
+				g.drawString(" -" + percentTillLevel + "%", 248, 114);
+
+			}
+		}else if(showPaint == false){
+			g.setColor(Color.WHITE);
+			g.drawRoundRect(4, 25, 283, 30, 10, 10);
+			g.setColor(new Color(0, 0, 0, 130));
+			g.fillRoundRect(4, 25, 283, 30, 10, 10);
+			g.setColor(Color.white);
+			g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+			g.drawString("Auth Code: " +authCode, 15, 39);
+			g.drawString("IP: " +ipAddress, 15, 52);
+		}
+	}	
+
+	@Override
+   	public void messageReceived(final MessageEvent e) {
+		final String serverString = e.getMessage();
+		if(serverString.contains("Your pouch is full") || serverString.contains("Your pouch has no essence left in it") || serverString.contains("There are no essences in your pouch")){
+			filledPouch = true;
+		}
+   	}
+
+	@Override
+	public void mouseClicked(MouseEvent arg0) {
+	}
+	@Override
+	public void mouseEntered(MouseEvent e) {
+    	}
+	@Override
+	public void mouseExited(MouseEvent e) {
+	}
+	@Override
+	public void mousePressed(MouseEvent e) {
+		Point paintPoint = new Point(e.getPoint());
+		final Rectangle toggleRectangle = new Rectangle(214, 4, 70, 20);
+		if(toggleRectangle.contains(paintPoint) && clickPaint == true) {
+			if (showPaint == true) {
+				showPaint = false;
+				clickPaint = false;
+			} else if (showPaint == false) {
+				showPaint = true;
+				clickPaint = false;
+			}
+		}
+	}
+	@Override
+	public void mouseReleased(MouseEvent arg0) {
+		clickPaint = true;
+	}
+	@Override
+	public void mouseDragged(MouseEvent e) {
+	}
+	@Override
+	public void mouseMoved(MouseEvent e) {
+   		Point p = e.getPoint();  
+		final Rectangle generalRectangle = new Rectangle(4, 4, 70, 20);
+		final Rectangle economyRectangle = new Rectangle(75, 4, 70, 20);
+		final Rectangle experienceRectangle = new Rectangle(146, 4, 70, 20);
+		if(generalRectangle.contains(p) && showPaint == true) {
+			showPaintID = 1;
+		}
+
+		else if(economyRectangle.contains(p)) {
+			showPaintID = 2;
+		}
+
+		else if(experienceRectangle.contains(p)) {
+			showPaintID = 3;
+		}
+	}
+
+	//*******************************************************//
+	// GUI
+	// *******************************************************//
+	public class ZMIRunecrafter extends JFrame {
+		private static final long serialVersionUID = 1L;
+		boolean settingsFile = true;
+		public  ZMIRunecrafter() {
+			initComponents();
+		}
+
+		private void clickStartActionPerformed(ActionEvent e) {
+			logoutMessage = textTextField.getText().toLowerCase();
+			remoteLogout = remoteLogoutBox.getSelectedItem().toString();
+			remoteName = playerNameTextField.getText().toLowerCase();
+			logoutType = welcomeScreenLogoutBox.getSelectedItem().toString();
+			bankStyle = bankStyleBox.getSelectedItem().toString();
+			repairingPouches = repairingPouchBox.getSelectedItem().toString();
+			authCode = codeField.getText().toString();
+			usePrayer = prayerBox.getSelectedItem().toString();
+			bankStyle = bankStyleBox.getSelectedItem().toString();
+			isfullBank = fullBank.isSelected();
+			useOuraniaTeleport = OuraniaTeleport.isSelected();
+			issafeRoute = safeRoute.isSelected();
+			try{
+	    		hpBelow = Integer.parseInt(eatWhenHpBelowTextField.getText());
+			} catch (NumberFormatException er){
+				log.severe("Error! HP Falls below text field has generated an error. Now using default. 250 Hippoints");
+				hpBelow = 250;
+			}
+			try{
+	    		foodID = Integer.parseInt(eatTextField.getText());
+			} catch (NumberFormatException er){
+				log.severe("Error! Food ID has generated an error. Now using default. 361. Tuna");
+				foodID = 361;
+			}
+
+
+
+			settings.setProperty("settingsFile", String.valueOf(settingsFile ? true : false));
+				if (settingsFile){
+					settings.setProperty("hpBelow", eatWhenHpBelowTextField.getText());
+					settings.setProperty("foodID", eatTextField.getText());
+
+					settings.setProperty("bankStyle", Integer.toString(bankStyleBox.getSelectedIndex()));
+					settings.setProperty("quickPrayer", Integer.toString(prayerBox.getSelectedIndex()));
+					settings.setProperty("pouchRepair", Integer.toString(repairingPouchBox.getSelectedIndex()));
+
+					settings.setProperty("fullBankMethod", String.valueOf(fullBank.isSelected() ? true : false));
+					settings.setProperty("OuraniaTeleport", String.valueOf(OuraniaTeleport.isSelected() ? true : false));
+					settings.setProperty("safeRoute", String.valueOf(safeRoute.isSelected() ? true : false));
+
+
+					settings.setProperty("remoteLogout", Integer.toString(remoteLogoutBox.getSelectedIndex()));
+					settings.setProperty("logoutTo", Integer.toString(welcomeScreenLogoutBox.getSelectedIndex()));
+					settings.setProperty("playerText", textTextField.getText());
+					settings.setProperty("playerName", playerNameTextField.getText());
+				}
+				try {
+					settings.store(new FileWriter(new File(GlobalConfiguration.Paths.getSettingsDirectory(),"ZMIRunecrafter.ini")),"The GUI Settings for ZMI Runecrafter v" + getVersion());
+				} catch (IOException ioe) {
+					log.warning("There has been an error while creating settings file!");
+				}
+
+
+
+
+
+
+			isGUIOpen = false;
+	    	
+			dispose();
+		}
+
+		private void clickExitActionPerformed(ActionEvent e) {
+			isGUIOpen = false;
+			exitGUI = true;
+			dispose();
+		}
+
+		public boolean loadSettings(){
+			try {
+				settings.load(new FileInputStream(new File(GlobalConfiguration.Paths.getSettingsDirectory(),"ZMIRunecrafter.ini")));
+			}catch(FileNotFoundException e){
+				log.warning("Settings file was not found! It will be created when you start the script.");
+				return false;
+			}catch(IOException e){
+				log.warning("Error loading settings file!");
+				return false;
+			}
+			try{
+				if (settings.getProperty("validFile") != null)
+					settingsFile = Boolean.parseBoolean(settings.getProperty("validFile"));
+			}catch (java.lang.Exception e){}
+			if (settingsFile){
+				try{
+					if (settings.getProperty("hpBelow") != null)
+						eatWhenHpBelowTextField.setText(settings.getProperty("hpBelow"));
+					if (settings.getProperty("foodID") != null)
+						eatTextField.setText(settings.getProperty("foodID"));
+					if (settings.getProperty("bankStyle") != null)
+						bankStyleBox.setSelectedIndex(Integer.parseInt(settings.getProperty("bankStyle")));
+					if (settings.getProperty("quickPrayer") != null)
+						prayerBox.setSelectedIndex(Integer.parseInt(settings.getProperty("quickPrayer")));
+					if (settings.getProperty("pouchRepair") != null)
+						repairingPouchBox.setSelectedIndex(Integer.parseInt(settings.getProperty("pouchRepair")));
+
+
+					if (settings.getProperty("safeRoute") != null)
+						safeRoute.setSelected(Boolean.parseBoolean(settings.getProperty("safeRoute")));
+					if (settings.getProperty("OuraniaTeleport") != null)
+						OuraniaTeleport.setSelected(Boolean.parseBoolean(settings.getProperty("OuraniaTeleport")));
+					if (settings.getProperty("fullBankMethod") != null)
+						fullBank.setSelected(Boolean.parseBoolean(settings.getProperty("fullBankMethod")));
+
+
+					//Logout Tab
+					if (settings.getProperty("remoteLogout") != null)
+						remoteLogoutBox.setSelectedIndex(Integer.parseInt(settings.getProperty("remoteLogout")));
+					if (settings.getProperty("logoutTo") != null)
+						welcomeScreenLogoutBox.setSelectedIndex(Integer.parseInt(settings.getProperty("logoutTo")));
+					if (settings.getProperty("playerName") != null)
+						playerNameTextField.setText(settings.getProperty("playerName"));
+					if (settings.getProperty("playerText") != null)
+						textTextField.setText(settings.getProperty("playerText"));
+
+
+				}catch (java.lang.Exception e){
+					log.warning("There has been an error. Default settings will be used.");
+				}
+			}
+			return true;
+		}
+
+		protected void bankStyleActionPerformed(ActionEvent e) {
+        		int bankStyles = bankStyleBox.getSelectedIndex();
+			fullBank.setVisible(false);
+			OuraniaTeleport.setVisible(false);
+			safeRoute.setVisible(false);
+			if(bankStyles == 0){
+				fullBank.setVisible(true);
+				OuraniaTeleport.setVisible(false);
+				safeRoute.setVisible(true);
+				return;
+			}
+			if(bankStyles == 1){
+				fullBank.setVisible(true);
+				OuraniaTeleport.setVisible(true);
+				safeRoute.setVisible(true);
+				return;
+			}
+			if(bankStyles == 2){
+				fullBank.setVisible(true);
+				OuraniaTeleport.setVisible(true);
+				safeRoute.setVisible(true);
+				return;
+			}
+			if(bankStyles == 3){
+				fullBank.setVisible(true);
+				OuraniaTeleport.setVisible(true);
+				safeRoute.setVisible(true);
+				return;
+			}
+			if(bankStyles == 4){
+				fullBank.setVisible(true);
+				OuraniaTeleport.setVisible(true);
+				safeRoute.setVisible(true);
+				return;
+			}
+			safeRoute.revalidate();
+			OuraniaTeleport.revalidate();
+			fullBank.revalidate();
+		}
+
+
+		private void initComponents() {
+			UIManager.put("TabbedPane.contentOpaque", Boolean.FALSE);
+			UIManager.put("TabbedPane.tabsOpaque", Boolean.FALSE);
+			backgroundPanel = (JPanel) this.getContentPane(); 
+			backgroundPanel.setLayout(null);
+			backgroundPanel.setOpaque(false);
+			clickStart = new JButton();
+			clickExit = new JButton();
+			versionLabel = new JLabel();
+			panelTabs = new JTabbedPane(JTabbedPane.BOTTOM);
+			backgroundPicture = new JLabel();
+			generalPanel = new JPanel();
+			settingsPanel = new JPanel();
+			logoutPanel = new JPanel();
+			aboutPanel = new JPanel();
+			extrasPanel = new JPanel();
+			textTextField = new JFormattedTextField();
+			textLabel = new JLabel();
+			playerNameTextField = new JFormattedTextField();
+			playerLabel = new JLabel();
+			logoutHeadingLabel = new JLabel();
+			remoteLogoutBox = new JComboBox();
+			remoteLogoutLabel = new JLabel();
+			welcomeScreenLabel = new JLabel();
+			welcomeScreenLogoutBox = new JComboBox();
+			bankStyleBox = new JComboBox();
+			bankStyleLabel = new JLabel();
+			bankStyleHeadingLabel = new JLabel();
+			codeHeadingLabel = new JLabel();
+			codeLabel = new JLabel();
+			codeField = new JFormattedTextField();
+			repairingPouchBox = new JComboBox();
+			repairingPouchLabel = new JLabel();
+			repairingPouchHeadingLabel = new JLabel();
+			repairingPouchInfo = new JLabel();
+			eatWhenHpBelowTextField = new JFormattedTextField();
+			eatingHeadingLabel = new JLabel();
+			eatingLabel = new JLabel();
+			foodIDLabel = new JLabel();
+			eatTextField = new JFormattedTextField();
+			prayerLabel = new JLabel();
+			prayerHeadingLabel = new JLabel();
+			prayerBox = new JComboBox();
+			fullBank = new JCheckBox();
+			OuraniaTeleport = new JCheckBox();
+			safeRoute = new JCheckBox();
+
+			//======== this ========
+			setTitle("Tab Runecrafter Version "  + getVersion());
+			setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+			setResizable(false);
+			setAlwaysOnTop(true);
+
+			//settings
+			settingsPanel.setBackground(new Color(0, 0, 0, 0));
+			settingsPanel.setFocusable(false);
+			settingsPanel.setLayout(null);
+			
+			generalPanel.setBackground(new Color(0, 0, 0, 0));
+			generalPanel.setLayout(null);
+			
+			logoutPanel.setBackground(new Color(0, 0, 0, 0));
+			logoutPanel.setFocusable(false);
+			logoutPanel.setLayout(null);
+
+			aboutPanel.setBackground(new Color(0, 0, 0, 0));
+			aboutPanel.setFocusable(false);
+			aboutPanel.setLayout(null);
+
+
+			extrasPanel.setBackground(new Color(0, 0, 0, 0));
+			extrasPanel.setFocusable(false);
+			extrasPanel.setLayout(null);
+
+			//---- clickStart ----
+			
+			clickStart.setText("Start");
+			clickStart.setFont(new Font("Comic Sans MS", Font.BOLD, 11));
+			clickStart.setBackground(Color.white);
+			clickStart.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					clickStartActionPerformed(e);
+				}
+			});
+			backgroundPanel.add(clickStart);
+			clickStart.setBounds(540, 230, 60, 25);
+
+			//---- clickExit ----
+			clickExit.setText("Exit");
+			clickExit.setFont(new Font("Comic Sans MS", Font.BOLD, 11));
+			clickExit.setBackground(Color.white);
+			clickExit.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					clickExitActionPerformed(e);
+				}
+			});
+
+
+			backgroundPanel.add(clickExit);
+			clickExit.setBounds(620, 230, 60, 25);
+			
+
+			//Tabs
+			backgroundPanel.add(panelTabs);
+			panelTabs.setBackground(Color.black);
+			panelTabs.setFont(new Font("Comic Sans MS",Font.BOLD, 12));
+			panelTabs.setBorder(null);
+			panelTabs.setFocusable(false);
+			panelTabs.addTab("General", generalPanel);
+			panelTabs.addTab("Settings", settingsPanel);
+			panelTabs.addTab("More Options", extrasPanel);
+			panelTabs.addTab("Logout", logoutPanel);
+			panelTabs.addTab("About", aboutPanel);
+			panelTabs.setBounds(8, 8, 690, 250);
+
+
+			//---- versionLabel ----
+			versionLabel.setText("Version " + getVersion());
+			versionLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 13));
+			versionLabel.setForeground(Color.white);
+			backgroundPanel.add(versionLabel);
+			versionLabel.setBounds(600, 35, 180, 20);
+
+			//General Panel
+
+			//---- codeHeadingLabel ----
+			codeHeadingLabel.setText("-------- Auth Code --------");
+			codeHeadingLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			codeHeadingLabel.setForeground(Color.white);
+			generalPanel.add(codeHeadingLabel);
+			codeHeadingLabel.setBounds(40, 25, 350, 20);
+
+			//---- codeLabel ----
+			codeLabel.setText("Code: ");
+			codeLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			codeLabel.setForeground(Color.white);
+			generalPanel.add(codeLabel);
+			codeLabel.setBounds(20, 55, 80, 20);
+
+			//---- codeField ----
+			codeField.setBackground(Color.white);
+			codeField.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			codeField.setValue("25974-23804-22354-55334");
+			codeField.setEnabled(true);			
+			generalPanel.add(codeField);
+			codeField.setBounds(100, 55, 200, 20);
+
+			//Settings Panel
+
+			//---- bankStyleHeadingLabel ----
+			bankStyleHeadingLabel.setText("-------- Bank Style --------");
+			bankStyleHeadingLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			bankStyleHeadingLabel.setForeground(Color.white);
+			settingsPanel.add(bankStyleHeadingLabel);
+			bankStyleHeadingLabel.setBounds(40, 25, 350, 20);
+
+			//---- bankStyleLabel ----
+			bankStyleLabel.setText("Style:");
+			bankStyleLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			bankStyleLabel.setForeground(Color.white);
+			settingsPanel.add(bankStyleLabel);
+			bankStyleLabel.setBounds(20, 55, 100, 20);
+
+			
+			//---- bankStyleBox ----
+			bankStyleBox.setBackground(Color.white);
+			bankStyleBox.setModel(new DefaultComboBoxModel(new String[] {
+				"Lunar Isle",
+				"Fire runes - ZMI",
+				"Body runes - ZMI",
+				"Mind runes - ZMI",
+				"Air runes - ZMI"
+			}));
+			bankStyleBox.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					bankStyleActionPerformed(e);
+				}
+			});
+			settingsPanel.add(bankStyleBox);
+			bankStyleBox.setBounds(135, 55, 150, 20);
+			bankStyleBox.setSelectedIndex(1);
+			bankStyleBox.setSelectedIndex(0);
+
+			//---- Full Bank ----
+			fullBank.setText("Full Bank Method");
+			fullBank.setForeground(Color.white);
+			fullBank.setBackground(new Color(0,0,0,0));
+			fullBank.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			settingsPanel.add(fullBank);
+			fullBank.setBounds(20, 85, 300, 20);
+
+
+			//---- Safe Route ----
+			safeRoute.setText("Use Safe Route");
+			safeRoute.setForeground(Color.white);
+			safeRoute.setBackground(new Color(0,0,0,0));
+			safeRoute.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			settingsPanel.add(safeRoute);
+			safeRoute.setBounds(20, 115, 300, 20);
+
+
+			//---- Ourania Teleport ----
+			OuraniaTeleport.setText("Use Ourania Teleport");
+			OuraniaTeleport.setBackground(new Color(0,0,0,0));
+			OuraniaTeleport.setForeground(Color.white);
+			OuraniaTeleport.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			settingsPanel.add(OuraniaTeleport);
+			OuraniaTeleport.setBounds(20, 145, 300, 20);
+
+
+			//---- eatingHeadingLabel ----
+			eatingHeadingLabel.setText("---- Eating Options ----");
+			eatingHeadingLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			eatingHeadingLabel.setForeground(Color.white);
+			settingsPanel.add(eatingHeadingLabel);
+			eatingHeadingLabel.setBounds(360, 25, 200, 20);
+
+
+
+			//---- eatingLabel ----
+			eatingLabel.setText("Eat when HP Below");
+			eatingLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			eatingLabel.setForeground(Color.white);
+			settingsPanel.add(eatingLabel);
+			eatingLabel.setBounds(340, 55, 150, 20);
+
+
+			//---- eatWhenHpBelowTextField ----
+			eatWhenHpBelowTextField.setBackground(Color.white);
+			eatWhenHpBelowTextField.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			eatWhenHpBelowTextField.setValue("250");
+			eatWhenHpBelowTextField.setEnabled(true);			
+			settingsPanel.add(eatWhenHpBelowTextField);
+			eatWhenHpBelowTextField.setBounds(490, 55, 90, 20);
+
+			//---- remoteLogoutLabel ----
+			foodIDLabel.setText("Food ID:");
+			foodIDLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			foodIDLabel.setForeground(Color.white);
+			settingsPanel.add(foodIDLabel);
+			foodIDLabel.setBounds(340, 85, 100, 20);
+
+			//---- eatTextField ----
+			eatTextField.setBackground(Color.white);
+			eatTextField.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			eatTextField.setValue("361");
+			eatTextField.setEnabled(true);			
+			settingsPanel.add(eatTextField);
+			eatTextField.setBounds(490, 85, 90, 20);
+
+
+
+
+			//---- prayerHeadingLabel ----
+			prayerHeadingLabel.setText("---- Prayer ----");
+			prayerHeadingLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			prayerHeadingLabel.setForeground(Color.white);
+			settingsPanel.add(prayerHeadingLabel);
+			prayerHeadingLabel.setBounds(360, 115, 200, 20);
+
+
+
+			//---- prayerLabel ----
+			prayerLabel.setText("Use Quick Prayer");
+			prayerLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			prayerLabel.setForeground(Color.white);
+			settingsPanel.add(prayerLabel);
+			prayerLabel.setBounds(340, 135, 150, 20);
+
+			//---- repairingPouchlBox ----
+			prayerBox.setBackground(Color.white);
+			prayerBox.setModel(new DefaultComboBoxModel(new String[] {
+				"No",
+				"Yes"
+			}));
+			settingsPanel.add(prayerBox);
+			prayerBox.setBounds(490, 135, 90, 20);
+
+
+
+
+			//Extras Panel
+			//---- repairingPouchLabel ----
+			repairingPouchHeadingLabel.setText("------ Pouch Option ------");
+			repairingPouchHeadingLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			repairingPouchHeadingLabel.setForeground(Color.white);
+			extrasPanel.add(repairingPouchHeadingLabel);
+			repairingPouchHeadingLabel.setBounds(40, 25, 350, 20);
+
+			//---- repairingPouchLabel ----
+			repairingPouchLabel.setText("Repair Pouch:");
+			repairingPouchLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			repairingPouchLabel.setForeground(Color.white);
+			extrasPanel.add(repairingPouchLabel);
+			repairingPouchLabel.setBounds(20, 55, 100, 20);
+
+			//---- repairingPouchlBox ----
+			repairingPouchBox.setBackground(Color.white);
+			repairingPouchBox.setModel(new DefaultComboBoxModel(new String[] {
+				"Yes",
+				"No"
+			}));
+			extrasPanel.add(repairingPouchBox);
+			repairingPouchBox.setBounds(135, 55, 150, 20);
+
+			//---- repairingPouchInfo ----
+			repairingPouchInfo.setText("If not using pouches, leave this option alone");
+			repairingPouchInfo.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			repairingPouchInfo.setForeground(Color.white);
+			extrasPanel.add(repairingPouchInfo);
+			repairingPouchInfo.setBounds(20, 85, 400, 20);
+
+
+
+
+			//Logout Panel
+
+			//---- logoutHeadingLabel ----
+			logoutHeadingLabel.setText("---- Logout Options: Logout When ----");
+			logoutHeadingLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			logoutHeadingLabel.setForeground(Color.white);
+			logoutPanel.add(logoutHeadingLabel);
+			logoutHeadingLabel.setBounds(40, 25, 350, 20);
+
+			//---- remoteLogoutLabel ----
+			remoteLogoutLabel.setText("Remote Logout:");
+			remoteLogoutLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			remoteLogoutLabel.setForeground(Color.white);
+			logoutPanel.add(remoteLogoutLabel);
+			remoteLogoutLabel.setBounds(20, 55, 100, 20);
+
+			//---- remoteLogoutBox ----
+			remoteLogoutBox.setBackground(Color.white);
+			remoteLogoutBox.setModel(new DefaultComboBoxModel(new String[] {
+				"No",
+				"Yes"
+			}));
+			logoutPanel.add(remoteLogoutBox);
+			remoteLogoutBox.setBounds(135, 55, 150, 20);
+
+			//---- playerLabel ----
+			playerLabel.setText("Player: ");
+			playerLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			playerLabel.setForeground(Color.white);
+			logoutPanel.add(playerLabel);
+			playerLabel.setBounds(20, 85, 100, 20);
+
+			//---- playerNameTextField ----
+			playerNameTextField.setBackground(Color.white);
+			playerNameTextField.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			playerNameTextField.setValue("Name Here");
+			playerNameTextField.setEnabled(true);			
+			logoutPanel.add(playerNameTextField);
+			playerNameTextField.setBounds(135, 85, 90, 20);
+
+			//---- textLabel ----
+			textLabel.setText("Says: ");
+			textLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			textLabel.setForeground(Color.white);
+			logoutPanel.add(textLabel);
+			textLabel.setBounds(20, 115, 100, 20);
+
+			//---- textTextField ----
+			textTextField.setBackground(Color.white);
+			textTextField.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			textTextField.setValue("Text Here");
+			textTextField.setEnabled(true);			
+			logoutPanel.add(textTextField);
+			textTextField.setBounds(135, 115, 200, 20);
+
+			//---- welcomeScreenLabel ----
+			welcomeScreenLabel.setText("Log out To:");
+			welcomeScreenLabel.setFont(new Font("Comic Sans MS", Font.PLAIN, 12));
+			welcomeScreenLabel.setForeground(Color.white);
+			logoutPanel.add(welcomeScreenLabel);
+			welcomeScreenLabel.setBounds(20, 145, 100, 20);
+
+			//---- welcomeScreenLogoutBox ----
+			welcomeScreenLogoutBox.setBackground(Color.white);
+			welcomeScreenLogoutBox.setModel(new DefaultComboBoxModel(new String[] {
+				"Login Screen",
+				"Welcome Screen"
+			}));
+			logoutPanel.add(welcomeScreenLogoutBox);
+			welcomeScreenLogoutBox.setBounds(135, 145, 150, 20);
+
+
+
+
+
+			//About Panel
+
+
+			//---- backgroundPicture ----
+			try {
+				backgroundPicture.setIcon(new ImageIcon(GUIpicture));
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
+			backgroundPanel.add(backgroundPicture);
+			backgroundPicture.setBounds(0, 0, 707, 266);
+
+			setSize(707, 288);
+			setLocationRelativeTo(getOwner());
+			// GEN-END:initComponents
+			loadSettings();
+			//Loads settings
+
+
+
+
+
+		}
+
+		private JButton clickStart;
+		private JButton clickExit;
+		private JPanel backgroundPanel;
+		private JTabbedPane panelTabs;
+		private JLabel backgroundPicture;
+		private JPanel generalPanel;
+		private JPanel settingsPanel;
+		private JPanel extrasPanel;
+		private JLabel versionLabel;
+		private JPanel logoutPanel;
+		private JPanel aboutPanel;
+		private JFormattedTextField textTextField;
+		private JLabel textLabel;
+		private JFormattedTextField playerNameTextField;
+		private JLabel playerLabel;
+		private JLabel logoutHeadingLabel;
+		private JComboBox remoteLogoutBox;
+		private JLabel remoteLogoutLabel;
+		private JLabel welcomeScreenLabel;
+		private JComboBox welcomeScreenLogoutBox;
+		private JComboBox bankStyleBox;
+		private JLabel bankStyleLabel;
+		private JLabel bankStyleHeadingLabel;
+		private JComboBox repairingPouchBox;
+		private JLabel repairingPouchLabel;
+		private JLabel repairingPouchHeadingLabel;
+		private JLabel repairingPouchInfo;
+		private JLabel codeLabel;
+		private JLabel codeHeadingLabel;
+		private JFormattedTextField codeField;
+		private JFormattedTextField eatWhenHpBelowTextField;
+		private JLabel eatingHeadingLabel;
+		private JLabel eatingLabel;
+		private JFormattedTextField eatTextField;
+		private JLabel foodIDLabel;
+		private JLabel prayerLabel;
+		private JLabel prayerHeadingLabel;
+		private JComboBox prayerBox;
+		private JCheckBox fullBank;
+		private JCheckBox OuraniaTeleport;
+		private JCheckBox safeRoute;
+	}
+}
