@@ -1,0 +1,1272 @@
+//*******************************************************//
+//CannonBall
+//Author: Richard
+//Redistributing and releasing different versions is not allowed unless granted permission by Richard
+// *******************************************************//
+
+import java.util.*;
+import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.KeyEvent;
+import java.awt.image.RenderedImage;
+import java.text.NumberFormat;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
+
+import java.io.*; 
+import java.net.*; 
+import javax.swing.JOptionPane; 
+import javax.swing.JFileChooser;  
+import java.io.IOException;
+import javax.imageio.ImageIO;
+import java.net.MalformedURLException;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JTextField;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.UIManager;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.JFormattedTextField;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.WindowConstants;
+import javax.swing.ImageIcon;
+import org.rsbot.util.GlobalConfiguration;
+
+import org.rsbot.script.Script;
+import org.rsbot.script.ScriptManifest;
+import org.rsbot.script.wrappers.*;
+import org.rsbot.event.listeners.*;
+import org.rsbot.event.events.*;
+import org.rsbot.script.methods.Skills;
+import org.rsbot.script.methods.Game;
+import org.rsbot.script.methods.Players;
+
+
+
+@ScriptManifest(authors = {"Richard"}, keywords = "Smithing", name = "Cannonball Smelter", version = 1.46, description = ("Cannonball Smelter"))
+              
+public class CannonBall extends Script implements PaintListener, MessageListener,  MouseListener, MouseMotionListener {
+
+    	CannonBallGUI gui;
+	public boolean isGUIOpen = true, exitGUI;
+	ChatResponder chatRespond;
+	antiBan AntiBan;
+
+	//Areas
+	RSTile bankArea, furnaceArea, walkArea;
+
+	//Paths
+	public RSTile[] bankToFurnace;
+
+	//Objects
+	private int bankBoothID;
+	private int furnaceID;
+
+	//Items
+	private final int barID = 2353;
+	private final int cannonballID = 2;
+	private final int mouldID = 4;
+
+	//Prices
+	private int steelBarPrice;
+	private int cannonballPrice;
+	
+	//Tiles
+	public RSTile boothTile;
+	public RSTile furnaceTile;
+
+	//Varibles
+	String retrievedAuthCode;
+	String authCode;
+	String ipAddress;	
+			//Energy
+		private int turnOnRunAt = random(50,80);
+			//EXP
+		private int lastEXP = 0;
+		private long lastRecievedEXP = 0;
+		public boolean outOfBars = false;
+		long expGained = 0;
+			//Remote Logout
+		public boolean isUsingRemote = false;
+		public boolean logToLoginScreen = true;
+		public boolean doLogout = false;
+		public String previousMessage = null;
+			//AntiBan
+		long preformedAntiban = System.currentTimeMillis();
+			//Status	
+		public String status = null;
+			//Animations
+
+
+	//GUI
+	public String remoteLogout;
+	public String logoutType;
+	private boolean guiStart = false;
+	private String remoteName = "", logoutMessage = "";
+	public String smithLocation;
+	public static boolean updateAvail = false;
+
+
+
+	//Paint
+	public long startTime = 0;
+	public Image GUIpicture;
+	public String Title1 = "Cannonball Smither";
+	public String Title2 = "            Version v" +getVersion();
+
+	private int sine = 0;
+    	public long ballsHour = 0;
+	private int ballsMade = 0;
+	private int sineM = 1;
+	public int xpPerHour = 0;
+	public int totalXP = 0;
+	public int levelsGained = 0;
+	public int startXP = 0;
+	public int XPToLevel = 0;
+	public int startLevel = 0;
+	public int percentTillLevel = 0;
+	public int currentLVL = 0;
+	public int currentXP = 0;
+	public int profit = 0;
+	private int numberOfInvenItems;
+	private int numberOfBars;
+	boolean showPaint = true;
+	public int showPaintID = 1;
+	public boolean clickPaint = true;
+	RSTile objectTile = null;
+
+
+	public boolean onStart() { 
+		try {
+			URL retrieveIP = new URL("http://www.scripts.site90.net/Scripts/showIp/showIp.php");
+			BufferedReader in = new BufferedReader(new InputStreamReader(retrieveIP.openStream()));
+			ipAddress = in.readLine();
+			URL retrieveAuthCode = new URL("http://www.scripts.site90.net/Scripts/CannonballSmelter/authCode.php");
+			BufferedReader read = new BufferedReader(new InputStreamReader(retrieveAuthCode.openStream()));
+			retrievedAuthCode = read.readLine();
+		}catch (IOException e) {
+		}	
+			URLConnection url = null; 
+			BufferedReader in = null; 
+			BufferedWriter out = null;
+        	try{
+			url = new URL("http://www.scripts.site90.net/Scripts/CannonballSmelter/versionINFO.php").openConnection(); 
+			in = new BufferedReader(new InputStreamReader(url.getInputStream()));
+			if(Double.parseDouble(in.readLine()) > getVersion()) {
+					updateAvail = true;
+				if(JOptionPane.showConfirmDialog(null, "An update has been found. \nDo you wish to update your script? \nYour current script version:" +getVersion()) == 0){
+					JOptionPane.showMessageDialog(null, "Please locate your 'CannonBall.java'"); 
+					JFileChooser fc = new JFileChooser(); 
+					if(fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION){ 
+						url = new URL("http://www.scripts.site90.net/Scripts/CannonballSmelter/CannonBall.java").openConnection(); 
+						in = new BufferedReader(new InputStreamReader(url.getInputStream())); 
+						out = new BufferedWriter(new FileWriter(fc.getSelectedFile().getPath())); 
+					String inp; 
+					while((inp = in.readLine()) != null){ 
+						out.write(inp); 
+						out.newLine(); 
+						out.flush(); 
+					} 
+						log("Script has been updated successfully. Please recompile."); 
+					return false; 
+					}else log("Update has been canceled"); 
+				}else log("Update has been canceled"); 
+			}
+		if(in != null) 
+			in.close(); 
+		if(out != null) 
+			out.close(); 
+		}catch (IOException e){ 
+			log("Error retrieving version number!"); 
+		} 
+		steelBarPrice = grandExchange.loadItemInfo(barID).getMarketPrice();
+		cannonballPrice = grandExchange.loadItemInfo(cannonballID).getMarketPrice();
+		GUIpicture = getImage("CannonballSmelterGUI.jpg");
+		gui = new CannonBallGUI();
+		gui.setVisible(true);
+		while (isGUIOpen) {
+    			sleep(100); 	
+			}
+
+		startTime = System.currentTimeMillis();
+		
+	if(!retrievedAuthCode.equals(authCode)){
+		log.severe("Error! Auth code is incorrect!");
+		log.severe("Restart the script without touching the settings!");
+		exitGUI = true;
+	}
+		env.enableRandoms();
+		AntiBan = new antiBan();
+	if (remoteLogout.equals("Yes")) {
+		chatRespond = new ChatResponder();
+		chatRespond.start();
+		isUsingRemote = true;
+	}
+
+	if (logoutType.equals("Login Screen")) {
+		logToLoginScreen = true;
+	}else{
+		logToLoginScreen = false;
+	}
+
+	if (smithLocation.equals("Edgeville")) {
+		bankBoothID = 26972;
+		furnaceID = 26814;
+		bankToFurnace = new RSTile[] { new RSTile(3097,3495), new RSTile(3110,3501)};
+		boothTile = new RSTile(2337,3807);
+		furnaceTile = new RSTile(3109,3502);
+	}
+
+	if (smithLocation.equals("Al-Kharid")) {
+		bankBoothID = 35647;
+		furnaceID = 11666;
+		bankToFurnace = new RSTile[] { new RSTile(3269,3167), new RSTile(3270,3167), new RSTile(3271,3167), new RSTile(3272,3167), new RSTile(3273,3167), new RSTile(3274,3167), new RSTile(3275,3167), new RSTile(3276,3167), new RSTile(3276,3168), new RSTile(3276,3168), new RSTile(3276,3169), new RSTile(3276,3170), new RSTile(3276,3171), new RSTile(3276,3172), new RSTile(3276,3173), new RSTile(3276,3174), new RSTile(3276,3175), new RSTile(3276,3176), new RSTile(3277,3177), new RSTile(3278,3178), new RSTile(3279,3179), new RSTile(3280,3180), new RSTile(3281,3181), new RSTile(3281,3182), new RSTile(3281,3183), new RSTile(3281,3184), new RSTile(3281,3185), new RSTile(3280,3185), new RSTile(3279,3184), new RSTile(3278,3185), new RSTile(3277,3185), new RSTile(3276,3185), new RSTile(3275,3185)};
+	}
+
+	if (smithLocation.equals("Neitiznot")) {
+		bankBoothID = 21301;
+		furnaceID = 21303;
+		bankToFurnace = new RSTile[] { new RSTile(2337,3807), new RSTile(2344,3809)};
+		boothTile = new RSTile(2337,3807);
+		furnaceTile = new RSTile(2344,3809);
+	}
+
+	return !exitGUI;
+	}
+
+	public String getAuthor() {
+		return "Richard";
+	}
+
+	public String getName() {
+		return "CannonBall";
+	}
+	public String getScriptCategory() {
+		return "Smithing";
+	}
+
+	public double getVersion() {
+		return 1.46;
+	}
+
+
+
+	private boolean atFurnace(){
+		furnaceArea = objects.getNearest(furnaceID).getLocation();
+        	return calc.distanceTo(furnaceArea) <= 3;
+   	}  
+	private boolean atBank(){
+		bankArea = objects.getNearest(bankBoothID).getLocation();
+        	return calc.distanceTo(bankArea) <= 3;
+   	}  
+
+
+
+	private Image getImage(String imageName) {
+		try {
+		File image = new File(GlobalConfiguration.Paths.getScriptsDirectory() + "/" + imageName);
+            		if(image.exists())
+                	return ImageIO.read(image.toURI().toURL());
+            	Image URLImage = ImageIO.read(new URL("http://www.scripts.site90.net/Scripts/CannonballSmelter/" + imageName));
+            	if(URLImage != null) {
+                ImageIO.write((RenderedImage)URLImage, "JPG", image);
+                return URLImage;
+            	}
+        	} catch(IOException e) {
+			log("Failed to retrieve picture(s).");
+        }
+        return null;
+	}
+
+	private boolean waitForDeposit(int id, int waitUntil) {
+		int items = inventory.getCount(id);
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (inventory.getCount(id) == 0 || inventory.getCount(id) < items){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean waitAnimation(int waitUntil) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (getMyPlayer().getAnimation() != -1){
+					return true;
+			}
+		}
+		return false;
+	}
+	private boolean waitForInterface(RSInterface Interface, int waitUntil) {
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (Interface.isValid()){
+					return true;
+			}
+		}
+		return false;
+	}
+	private boolean waitForItem(int id, int waitUntil) {
+		numberOfBars = inventory.getCount(id);
+		long time = System.currentTimeMillis();
+		while (System.currentTimeMillis() - time < waitUntil) {
+			if (inventory.getCount(id) > numberOfBars){
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private void EXPCheck(){
+		if(lastEXP == 0){
+			lastEXP = skills.getCurrentExp(Skills.SMITHING);
+			lastRecievedEXP = System.currentTimeMillis();
+		}else{
+		if(lastEXP != skills.getCurrentExp(Skills.SMITHING)){
+			lastEXP = skills.getCurrentExp(Skills.SMITHING);
+			lastRecievedEXP = System.currentTimeMillis();
+		}
+		if ((System.currentTimeMillis() - lastRecievedEXP )  >= random(780000, 900000)){
+			log("You haven't gained any EXP in the last 13-15 minutes. Now Logging out...");
+			env.disbleRandoms();
+			log("Auto-login Disabled");
+			game.logout(true);
+			log("Stopping script.");
+			stopScript();			
+		}			
+		}
+		
+	}
+	private void energyCheck() {
+		if (walking.getEnergy() >= turnOnRunAt) {
+			walking.setRun(true);
+			sleep(random(800,1000));
+		}
+	}
+
+	private void walkPath(final RSTile[] path, boolean reverse) {
+		try{
+		RSTilePath actualPath;
+			if(!reverse){
+				actualPath = walking.newTilePath(path);
+				actualPath.randomize(2, 2);
+			}else{
+				actualPath = walking.newTilePath(path);
+				actualPath.reverse();
+				actualPath.randomize(1, 1);
+			}
+		RSTile endPath = actualPath.getEnd();
+		if(!(calc.distanceTo(endPath) < 5)) {
+			energyCheck();
+			if(!getMyPlayer().isMoving() || (calc.distanceTo(walking.getDestination()) <= random(7,9) && calc.distanceBetween(walking.getDestination(), endPath) > 3)){
+				if(!actualPath.traverse())
+				actualPath.traverse();
+			}
+		}
+		}catch (Exception e) {
+			walkPath(path, reverse);
+        	}
+	}
+
+	private String getChatMessages() {
+		try {
+			String text = null;
+			for (int x = 280; x >= 180; x--){
+				if (interfaces.get(137).getComponent(x).getText() != null) {
+					if (interfaces.get(137).getComponent(x).getText().contains("<col=")) {
+						text = interfaces.get(137).getComponent(x).getText();
+						break;
+					}
+				}
+			}
+			return text;
+		} catch (Exception e){}
+		return null;
+	}
+
+
+	private class ChatResponder extends Thread {
+		boolean run = true;
+		@Override
+		public void run() {
+			while (getChatMessages() == null) {
+				try {
+					Thread.sleep(20);
+				} catch (Exception ignored) {}
+			}
+			while(run) {
+				try{
+					String message = getChatMessages().toLowerCase();
+					if (message != null && !message.equals(previousMessage)) {
+						if (isUsingRemote == true){
+							String[] entireMessage = message.split("<col=");
+							if (entireMessage[0].toLowerCase().contains(remoteName)){
+								if (entireMessage[1].toLowerCase().contains(logoutMessage)){
+									log("Your Character has talked to you with your logout message.");
+										doLogout = true;
+								}else{
+									log("Your Character has talked to you, but without logout message.");
+								}
+							}
+						previousMessage = message;
+						}
+					}
+				}catch (Exception e){}
+			}
+		}
+	}
+
+	private class antiBan extends Thread {
+		final char[] upDownRandom = new char[] { KeyEvent.VK_DOWN, KeyEvent.VK_UP };
+		final char[] leftRightRandom = new char[] { KeyEvent.VK_LEFT,KeyEvent.VK_RIGHT };
+		final char[] allKeys = new char[] { KeyEvent.VK_LEFT,KeyEvent.VK_RIGHT, KeyEvent.VK_UP,KeyEvent.VK_UP };
+		final int random1 = random(0, 2);
+		final int random2 = random(0, 2);
+		final int random3 = random(0, 4);
+		int antiBanRandomValue = random(0,15);
+		private void mouseMovementAntiBan(){
+			int mouseRandomValue = random(1,2);
+				try{
+				if(mouseRandomValue == 1){
+					mouse.moveRandomly(200);
+				}
+				else if(mouseRandomValue == 2){
+					mouse.moveOffScreen();
+				}
+				}catch (Exception e){}
+		}
+
+		private void cameraMovementAntiBan(){
+			try{
+			if(random(0,2) <= 1){
+				keyboard.pressKey(upDownRandom[random1]);
+				sleep(random(600,800));
+	                    	keyboard.pressKey(leftRightRandom[random2]);
+				sleep(random(600,800));
+				keyboard.releaseKey(leftRightRandom[random2]);
+				sleep(random(100,200));
+				keyboard.releaseKey(upDownRandom[random1]);
+			}else{
+				keyboard.pressKey(allKeys[random3]);
+				sleep(random(800,1000));
+				keyboard.releaseKey(allKeys[random3]);
+			}
+			}catch (Exception e){}
+		}
+
+		private void checkSkillAntiBan(){
+			try{
+			if(random(5,7) == 6 && getMyPlayer().getAnimation() != -1){
+				if(game.getCurrentTab() != Game.TAB_STATS){
+					game.openTab(Game.TAB_STATS);
+					sleep(random(600,800));
+					Point checkMiningSkill = new Point(interfaces.get(320).getComponent(20).getAbsoluteX()+20,interfaces.get(320).getComponent(20).getAbsoluteY()+10);
+					mouse.move(checkMiningSkill,5,5);
+					sleep(random(600,1000));
+				}
+			}
+			}catch (Exception e){}
+		}
+
+		private void clickPlayerAntiBan(){
+			if(random(1,3) == 2){
+				try{
+				RSPlayer player = players.getNearest(Players.ALL_FILTER);
+				if (player != null) {
+					mouse.move(player.getScreenLocation(), 5, 5);
+					sleep(random(400, 500));
+					mouse.click(false);
+					sleep(random(750, 800));
+					mouse.move(random(400, 450), random(10, 495));
+				}
+				}catch (Exception e){}
+			}
+		}
+
+
+		private void checkFriendsAntiBan(){
+			try{
+			if(game.getCurrentTab() != Game.TAB_FRIENDS){
+				if(random(0,2) == 1){
+					game.openTab(Game.TAB_FRIENDS);
+					sleep(random(1000,2000));
+				}
+			}
+			}catch (Exception e){}
+		}
+
+        	@Override
+        	public void run() {
+			try{
+				if((System.currentTimeMillis() - preformedAntiban) >= (random(30, 50) * 1000) && !getMyPlayer().isMoving() && !getMyPlayer().isInCombat()) {				
+		
+					findAntiBan();
+					preformedAntiban = System.currentTimeMillis();
+            			}
+			}catch (Exception e){}
+		}
+
+        	private void findAntiBan() {
+			antiBanRandomValue = random(0,10);
+			if(antiBanRandomValue < 5){
+				mouseMovementAntiBan();
+			}else if(antiBanRandomValue == 6){
+				cameraMovementAntiBan();	
+			}else if(antiBanRandomValue == 7){
+				checkSkillAntiBan();
+			}else if(antiBanRandomValue == 8){
+				clickPlayerAntiBan();
+			}else if(antiBanRandomValue == 9){
+				checkFriendsAntiBan();
+			}
+            	}
+        }
+	public void logMeOutAndStop(){
+		if(doLogout == true){
+			if(game.isLoggedIn() && logToLoginScreen == true){
+				env.disbleRandoms();
+				log("Auto-login Disabled");
+				game.logout(false);
+				sleep(random(3000,5000));
+				chatRespond.run = false;
+				stopScript();
+			}else{
+				env.disbleRandoms();
+				log("Auto-login Disabled");
+				game.logout(true);
+				chatRespond.run = false;
+				stopScript();
+			}
+		}
+	}
+	public void onFinish() {
+		if (remoteLogout.equals("Yes")) {
+			chatRespond.run = false;
+		}
+		log("Thank you for using Cannonball Smelter.");
+		log("You've made "+ballsMade+ " cannonballs with " +profit+ " profit and gained " + expGained + " EXP");
+    	}
+	private void bank(){
+		RSObject bankBooth = objects.getNearest(bankBoothID);
+		RSObject furnace = objects.getNearest(furnaceID);
+		objectTile = bankBooth.getLocation();
+		try{
+			status = "Banking";
+			if(inventory.getCount(barID) != 27 || inventory.getCount(mouldID) != 1){
+				if(!bank.isOpen() && bankBooth.isOnScreen()){
+					if(!smithLocation.equals("Neitiznot")){
+						if(tiles.doAction(objectTile, "Use-quickly"))
+						waitForInterface(interfaces.get(762), random(2000,3000));
+					}else{
+						if(tiles.doAction(objectTile, "Use Bank chest"))
+						waitForInterface(interfaces.get(762), random(2000,3000));
+					}
+				}
+				sleep(random(400,600));
+				if(bank.isOpen() && inventory.getCount(barID) <= 26){
+					bank.depositAllExcept(mouldID, barID, cannonballID);
+					sleep(random(100,200));
+						while(inventory.contains(cannonballID)){
+							inventory.getItem(cannonballID).doAction("Deposit-All");
+							waitForDeposit(cannonballID, random(1500,2000));
+						}
+						if(bank.getCount(barID) == 0 && bank.isOpen()){
+								doLogout = true;
+							}
+						if(inventory.getCount(mouldID) != 1){
+							if(bank.getItem(mouldID).doAction("Withdraw-1") && bank.getItem(barID).doAction("Withdraw-All")){
+							waitForItem(barID, random(1500,2000));
+							}
+						}else{
+							if(bank.getItem(barID).doAction("Withdraw-All")){
+							waitForItem(barID, random(1500,2000));
+							}
+						}
+					
+				}
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+
+	private void smeltBalls(){
+		RSItem steelBar = inventory.getItem(barID);
+		RSObject furnace = objects.getNearest(furnaceID);
+		RSObject bankBooth = objects.getNearest(bankBoothID);
+		objectTile = furnace.getLocation();
+		int mouseOffScreen = random(1,25);
+		try{
+			if(getMyPlayer().getAnimation() == 899 || getMyPlayer().getAnimation() == 827){
+				status = "Smelting Cannonballs";
+				sleep(random(300,400));
+			}
+			if(inventory.getCount(barID) > 0 && status != "Smelting Cannonballs"){
+				if(!interfaces.get(905).isValid() && furnace.isOnScreen()){
+					steelBar = inventory.getItem(barID);
+						if(bank.isOpen()){
+							bank.close();
+						}
+						if(!inventory.isItemSelected()){
+							inventory.getItem(barID).doAction("Use");
+							sleep(random(100,300));
+						}
+						else if(smithLocation.equals("Neitiznot")){
+							tiles.doAction(objectTile, "Use Steel bar -> Clay forge");
+							waitForInterface(interfaces.get(905), random(2000,3000));
+							sleep(random(300,400));
+						}else{
+							furnace.doHover();
+							tiles.doAction(objectTile, "Use Steel bar -> Furnace");
+							waitForInterface(interfaces.get(905), random(3000,5000));
+							sleep(random(300,400));
+						}
+				}
+				if(interfaces.get(905).isValid()){
+					interfaces.get(905).getComponent(14).doAction("Make All");
+					status = "Smelting Cannonballs";
+				}
+			sleep(random(300,400));
+			mouseOffScreen = random(1,25);
+			if(mouseOffScreen == 4){
+					mouse.moveOffScreen();
+			}
+			}
+			else if(getMyPlayer().getAnimation() == -1){
+				waitAnimation(random(2000,3000));
+				sleep(random(200,300));
+				if(getMyPlayer().getAnimation() == -1)
+				status = "AFK-ed?";
+			}
+		}catch (Exception e) { 
+		}
+	}
+
+
+	public int loop() { 
+		try{
+		EXPCheck();
+		mouse.setSpeed(random(6,8));
+		camera.setPitch(true);
+        		if (!game.isLoggedIn())
+            			return 100;
+			if(inventory.getInterface().isValid()){
+					RSObject bankBooth = objects.getNearest(bankBoothID);
+					RSObject furnace = objects.getNearest(furnaceID);
+				if(inventory.getCount(barID) == 0){
+					if(bankBooth.isOnScreen()){
+						bank();
+					}else if(atFurnace()){
+						status = "Walking to bank";
+					}
+				}
+				else if(inventory.getCount(barID) >= 1){
+					if(furnace.isOnScreen() && calc.distanceTo(furnace) <= 4){
+						smeltBalls();
+					}else{
+						if(!getMyPlayer().isMoving())
+						status = "Walking to furnace";
+					}
+				}
+			}				
+			if(status.contains("Walking ")){
+				bankArea = objects.getNearest(bankBoothID).getLocation();
+				furnaceArea = objects.getNearest(furnaceID).getLocation();
+				if(status == "Walking to bank"){
+					if (smithLocation.equals("Neitiznot")) {
+						if(walking.walkTileMM(boothTile)){
+							sleep(random(2000,3000));
+						}
+					}else{
+						walkArea = bankArea;
+						walkPath(bankToFurnace, true);
+					}
+				}else if(status == "Walking to furnace"){
+					if (smithLocation.equals("Neitiznot")) {
+						if(walking.walkTileMM(furnaceTile)){
+							sleep(random(2000,3000));
+						}
+					}else{
+						walkArea = furnaceArea;
+						walkPath(bankToFurnace, false);
+					}
+				}
+			}
+			else if(status.equals("Smelting Cannonballs")){
+				AntiBan.run();	
+			}
+			if(doLogout == true){
+				log("Out of steel bars. Now logging off and stopping script");
+				logMeOutAndStop();
+			}
+		} catch(Exception e) {
+		}
+    	 return 1;
+}
+
+
+    
+	//Paint Details
+	private String getFormattedTime(final long timeMillis) {
+        long jmillis = timeMillis;
+        final long seconds2 = jmillis / 1000;
+        final long hours = jmillis / (1000 * 60 * 60);
+        jmillis -= hours * 1000 * 60 * 60;
+        final long minutes = jmillis / (1000 * 60);
+        jmillis -= minutes * 1000 * 60;
+        final long seconds = jmillis / 1000;
+        String hoursString = "";
+        String minutesString = "";
+        String secondsString = seconds + "";
+        String type = "seconds";
+
+        if (minutes > 0) {
+            minutesString = minutes + ":";
+            type = "minutes";
+        } else if (hours > 0 && seconds2 > 0) {
+            minutesString = "0:";
+        }
+        if (hours > 0) {
+            hoursString = hours + ":";
+            type = "hours";
+        }
+        if (minutes < 10 && !type.equals("seconds")) {
+            minutesString = "0" + minutesString;
+        }
+        if (hours < 10 && type.equals("hours")) {
+            hoursString = "0" + hoursString;
+        }
+        if (seconds < 10 && !type.equals("seconds")) {
+            secondsString = "0" + secondsString;
+        }
+
+        if (timeMillis == 1000) {
+            type = "second";
+        } else if (timeMillis == 60000) {
+            type = "minute";
+        } else if (timeMillis == 3600000) {
+            type = "hour";
+        }
+
+        return hoursString + minutesString + secondsString + " " + type;
+    }
+
+
+ @Override
+ public void onRepaint(Graphics g) {
+		if (!game.isLoggedIn())
+			return;
+
+		g.setColor(new Color(60, 155, 170, 130));
+		g.drawLine(0, (int) mouse.getLocation().getY(), game.getWidth(), (int) mouse.getLocation().getY());
+		g.drawLine((int) mouse.getLocation().getX(), 0, (int) mouse.getLocation().getX(), game.getHeight()); 
+		if (startLevel == 0) {
+			startXP = skills.getCurrentExp(Skills.SMITHING);
+			startLevel = skills.getCurrentLevel(Skills.SMITHING);
+		}
+		profit = (ballsMade*cannonballPrice) - (steelBarPrice*(ballsMade/4));
+		final int currentLvl = skills.getCurrentLevel(Skills.SMITHING);
+		final int levelGained = currentLvl - startLevel;
+		final int XPToLevel = skills.getExpToNextLevel(Skills.SMITHING);
+		int percentTillLevel = skills.getPercentToNextLevel(Skills.SMITHING);
+		final int currentXP = skills.getCurrentExp(Skills.SMITHING);
+		final long XPgained = currentXP - startXP;
+		expGained = XPgained;
+		long seconds = 0;
+		long minutes = 0;
+		long hours = 0;
+		Font font;
+		final NumberFormat nf = NumberFormat.getInstance();
+		nf.setMinimumIntegerDigits(2);
+		final long runTime = System.currentTimeMillis() - startTime;
+		seconds = runTime / 1000;
+		float profitPerSecond = 0;
+		profitPerSecond = ((float) profit)/(float)(seconds + (minutes*60) + (hours*60*60)); 
+		float profitPerMin = profitPerSecond * 60;
+		float profitPerHour = profitPerMin * 60;	
+          	long ballsHourTime = (hours * 3600) + (minutes * 60) + seconds + 1;
+            	ballsHour = ballsMade * 3600 / ballsHourTime;
+
+		if ( seconds >= 60 ) {
+			minutes = seconds / 60;
+			seconds -= (minutes * 60);
+		}
+		if ( minutes >= 60 ) {
+			hours = minutes / 60;
+			minutes -= (hours * 60);
+		}
+		
+		if ((runTime / 1000) > 0) 
+		{
+			xpPerHour = (int) ((3600000.0 / (double) runTime) * XPgained);
+		}
+
+			//Borders
+			g.setColor(Color.WHITE);
+			g.drawRoundRect(4, 4, 70, 20, 10, 10);
+			g.drawRoundRect(75, 4, 70, 20, 10, 10);
+			g.drawRoundRect(146, 4, 70, 20, 10, 10);
+			g.drawRoundRect(217, 4, 70, 20, 10, 10);
+			
+			// Backgrounds
+                        g.setColor(new Color(0, 0, 0, 130));
+			g.fillRoundRect(4, 4, 70, 20, 10, 10);
+			g.fillRoundRect(75, 4, 70, 20, 10, 10);
+			g.fillRoundRect(146, 4, 70, 20, 10, 10);
+			g.fillRoundRect(217, 4, 70, 20, 10, 10);
+
+
+
+			//Drawings
+			g.setColor(Color.white);
+			g.setFont(new Font("Calibri", Font.BOLD, 12));
+			g.drawString("General", 10, 22);
+			g.drawString("Economy", 81, 22);
+			g.drawString("Experience", 152, 22);
+			g.drawString("Hide Paint", 223, 22);
+
+ 		if(showPaint == true) {
+				g.setColor(Color.WHITE);
+				g.drawRoundRect(4, 25, 283, 110, 10, 10);
+				g.setColor(new Color(0, 0, 0, 130));
+				g.fillRoundRect(4, 25, 283, 110, 10, 10);
+                	if(showPaintID == 1){
+				g.setColor(Color.white);
+				g.setFont(new Font("Chalkduster", Font.BOLD, 11));
+				g.drawString(""  +Title1, 40, 40);
+				g.drawString("" + Title2, 40, 55);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString("Status: " + status, 15, 127);
+				g.drawString("Time running: " + hours + ":" + nf.format(minutes) + ":" + nf.format(seconds), 15, 75);
+				g.drawString("Location: " + smithLocation, 15, 88);
+			}
+                	if(showPaintID == 2){
+				g.setColor(Color.white);
+				g.setFont(new Font("Chalkduster", Font.BOLD, 11));
+				g.drawString(""  +Title1, 40, 40);
+				g.drawString("" + Title2, 40, 55);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString("Smelted " +ballsMade +" Cannonballs", 15, 75);
+				g.drawString("Cannonball Per Hour: " + ballsHour, 15, 88);
+				g.drawString("Total Profit: " + profit, 15, 101);
+				g.drawString("Profit per hour: " + (int)profitPerHour+ " @ " +cannonballPrice+ " each", 15, 114);
+				g.drawString("Inventory", 223, 75);
+				g.drawString("Contains: ", 230, 88);
+				g.drawString("Status: " + status, 15, 127);
+				g.setColor(Color.RED);
+				g.drawString(numberOfInvenItems + " Items", 230, 101);
+			}
+                	if(showPaintID == 3){
+				g.setColor(Color.white);
+				g.setFont(new Font("Chalkduster", Font.BOLD, 11));
+				g.drawString(""  +Title1, 40, 40);
+				g.drawString("" + Title2, 40, 55);
+				g.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
+				g.drawString("Gained: " + XPgained+ "EXP" , 15, 75);
+				g.drawString("EXP P/H: " + xpPerHour, 15, 88);
+				g.drawString("Percent to next level: ", 15, 114);
+				g.drawString("Status: " + status, 15, 127);
+				g.drawString("Current Level: ", 160, 88);
+				g.drawString(""+currentLvl+"("+levelGained+")", 245, 88);
+				if (XPgained >= 100) {
+					final long jmillis2 = (System.currentTimeMillis() - startTime);
+					final int XPPerSecond = (int) (XPgained * 1000 / jmillis2); 
+					final int SecsToLevel = XPToLevel / XPPerSecond;
+					g.drawString("Next level in " + getFormattedTime(SecsToLevel * 1000), 15, 101);
+					} else {
+					g.drawString("Calculating time until next level...", 15, 101);
+				}
+				g.drawRect(145,104,100,12);
+                          	g.setColor(new Color(0,0,0,0));
+                         	g.fillRect(146,105,99,11);
+                          	double percentUntilLevel = .99*percentTillLevel;
+                          	g.setColor(new Color(60, 155, 170, 130));
+                          	g.fillRect(146,105,(int)percentUntilLevel,11);
+				g.setColor(Color.red);
+				g.drawString(" -" + percentTillLevel + "%", 248, 114);
+
+			}
+		}
+	}	
+
+	
+    	public void messageReceived(final MessageEvent e) {
+		final String serverString = e.getMessage();
+		if(serverString.contains("You remove the cannonballs from the mould")) {
+			ballsMade = ballsMade + 4;
+			numberOfInvenItems = inventory.getCount() -1;
+		} 
+
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent arg0) {
+	}
+	@Override
+	public void mouseEntered(MouseEvent e) {
+    	}
+	@Override
+	public void mouseExited(MouseEvent e) {
+	}
+	@Override
+	public void mousePressed(MouseEvent e) {
+		Point paintPoint = new Point(e.getPoint());
+		final Rectangle toggleRectangle = new Rectangle(214, 4, 70, 20);
+		if(toggleRectangle.contains(paintPoint) && clickPaint == true) {
+			if (showPaint == true) {
+				showPaint = false;
+				clickPaint = false;
+			} else if (showPaint == false) {
+				showPaint = true;
+				clickPaint = false;
+			}
+		}
+	}
+	@Override
+	public void mouseReleased(MouseEvent arg0) {
+		clickPaint = true;
+	}
+	@Override
+	public void mouseDragged(MouseEvent e) {
+	}
+	@Override
+	public void mouseMoved(MouseEvent e) {
+   		Point p = e.getPoint();  
+		final Rectangle generalRectangle = new Rectangle(4, 4, 70, 20);
+		final Rectangle economyRectangle = new Rectangle(75, 4, 70, 20);
+		final Rectangle experienceRectangle = new Rectangle(146, 4, 70, 20);
+		if(generalRectangle.contains(p) && showPaint == true) {
+			showPaintID = 1;
+		}
+
+		else if(economyRectangle.contains(p)) {
+			showPaintID = 2;
+		}
+
+		else if(experienceRectangle.contains(p)) {
+			showPaintID = 3;
+		}
+	}
+
+	//*******************************************************//
+	// GUI
+	// *******************************************************//
+	public class CannonBallGUI extends JFrame {
+		private static final long serialVersionUID = 1L;
+		public CannonBallGUI() {
+			initComponents();
+		}
+
+		private void clickStartActionPerformed(ActionEvent e) {
+			remoteLogout = remoteLogoutBox.getSelectedItem().toString();
+			logoutMessage = textTextField.getText().toLowerCase();
+			remoteName = playerNameTextField.getText().toLowerCase();
+			logoutType = welcomeScreenLogoutBox.getSelectedItem().toString();
+			smithLocation = locationBox.getSelectedItem().toString();
+			authCode = codeField.getText().toString();
+			isGUIOpen = false;
+			dispose();
+		}
+
+		private void clickExitActionPerformed(ActionEvent e) {
+			isGUIOpen = false;
+			exitGUI = true;
+			dispose();
+		}
+		private void initComponents() {
+			UIManager.put("TabbedPane.contentOpaque", Boolean.FALSE);
+			UIManager.put("TabbedPane.tabsOpaque", Boolean.FALSE);
+			backgroundPanel = (JPanel) this.getContentPane(); 
+			backgroundPanel.setLayout(null);
+			clickStart = new JButton();
+			clickExit = new JButton();
+			versionLabel = new JLabel();
+			panelTabs = new JTabbedPane(JTabbedPane.BOTTOM);
+			panelTabs.setBackground(Color.white);
+			backgroundPicture = new JLabel();
+			generalPanel = new JPanel();
+			settingsPanel = new JPanel();
+			logoutPanel = new JPanel();
+			aboutPanel = new JPanel();
+			textTextField = new JFormattedTextField();
+			textLabel = new JLabel();
+			playerNameTextField = new JFormattedTextField();
+			playerLabel = new JLabel();
+			logoutHeadingLabel = new JLabel();
+			remoteLogoutBox = new JComboBox();
+			remoteLogoutLabel = new JLabel();
+			updateLabel = new JLabel();
+			welcomeScreenLabel = new JLabel();
+			welcomeScreenLogoutBox = new JComboBox();
+			locationBox = new JComboBox();
+			locationLabel = new JLabel();
+			locationHeadingLabel = new JLabel();
+			codeHeadingLabel = new JLabel();
+			codeLabel = new JLabel();
+			codeField = new JFormattedTextField();
+
+			//======== this ========
+			setTitle("Cannonball Smither "  + getVersion());
+			setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+			setResizable(false);
+			setAlwaysOnTop(true);
+
+			//settings
+			settingsPanel.setBackground(new Color( 255, 0, 0, 12 ));
+			settingsPanel.setOpaque(false);
+			settingsPanel.setLayout(null);
+			
+			generalPanel.setOpaque(false);
+			generalPanel.setLayout(null);
+			
+			logoutPanel.setOpaque(false);
+			logoutPanel.setLayout(null);
+
+			aboutPanel.setOpaque(false);
+			aboutPanel.setFocusable(false);
+			aboutPanel.setLayout(null);
+
+			//---- clickStart ----
+			
+			clickStart.setText("Start");
+			clickStart.setFont(new Font("Chalkduster", Font.BOLD, 12));
+			clickStart.setBackground(Color.white);
+			clickStart.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					clickStartActionPerformed(e);
+				}
+			});
+			backgroundPanel.add(clickStart);
+			clickStart.setBounds(540, 230, 70, 25);
+
+			//---- clickExit ----
+			clickExit.setText("Exit");
+			clickExit.setFont(new Font("Chalkduster", Font.BOLD, 12));
+			clickExit.setBackground(Color.white);
+			clickExit.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					clickExitActionPerformed(e);
+				}
+			});
+
+
+			backgroundPanel.add(clickExit);
+			clickExit.setBounds(620, 230, 70, 25);
+			
+
+			//Tabs
+			backgroundPanel.add(panelTabs);
+			panelTabs.setFont(new Font("Comic Sans MS",Font.BOLD, 12));
+			panelTabs.addTab("General", generalPanel);
+			panelTabs.addTab("Settings", settingsPanel);
+			panelTabs.addTab("Logout", logoutPanel);
+			panelTabs.addTab("About", aboutPanel);
+			panelTabs.setBounds(8, 8, 690, 250);
+
+
+			//---- versionLabel ----
+			versionLabel.setText("Version " + getVersion());
+			versionLabel.setFont(new Font("Chalkduster", Font.PLAIN, 13));
+			versionLabel.setForeground(Color.white);
+			backgroundPanel.add(versionLabel);
+			versionLabel.setBounds(600, 35, 180, 20);
+
+			//General Panel
+
+			//---- codeHeadingLabel ----
+			codeHeadingLabel.setText("-------- Auth Code --------");
+			codeHeadingLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			codeHeadingLabel.setForeground(Color.white);
+			generalPanel.add(codeHeadingLabel);
+			codeHeadingLabel.setBounds(40, 25, 350, 20);
+
+			//---- codeLabel ----
+			codeLabel.setText("Code: ");
+			codeLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			codeLabel.setForeground(Color.white);
+			generalPanel.add(codeLabel);
+			codeLabel.setBounds(20, 55, 80, 20);
+
+			//---- codeField ----
+			codeField.setBackground(Color.white);
+			codeField.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			codeField.setValue("45632-83337-13678-91752");
+			codeField.setEnabled(true);			
+			generalPanel.add(codeField);
+			codeField.setBounds(100, 55, 200, 20);
+
+			//Settings Panel
+
+			//---- locationHeadingLabel ----
+			locationHeadingLabel.setText("-------- Location --------");
+			locationHeadingLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			locationHeadingLabel.setForeground(Color.white);
+			settingsPanel.add(locationHeadingLabel);
+			locationHeadingLabel.setBounds(40, 25, 350, 20);
+
+			//---- locationLabel ----
+			locationLabel.setText("Location:");
+			locationLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			locationLabel.setForeground(Color.white);
+			settingsPanel.add(locationLabel);
+			locationLabel.setBounds(20, 55, 100, 20);
+
+			//---- locationBox ----
+			locationBox.setBackground(Color.white);
+			locationBox.setModel(new DefaultComboBoxModel(new String[] {
+				"Edgeville",
+				"Al-Kharid",
+				"Neitiznot"
+			}));
+			settingsPanel.add(locationBox);
+			locationBox.setBounds(135, 55, 150, 20);
+
+
+
+			//Logout Panel
+
+			//---- logoutHeadingLabel ----
+			logoutHeadingLabel.setText("---- Logout Options: Logout When ----");
+			logoutHeadingLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			logoutHeadingLabel.setForeground(Color.white);
+			logoutPanel.add(logoutHeadingLabel);
+			logoutHeadingLabel.setBounds(40, 25, 350, 20);
+
+			//---- remoteLogoutLabel ----
+			remoteLogoutLabel.setText("Remote Logout:");
+			remoteLogoutLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			remoteLogoutLabel.setForeground(Color.white);
+			logoutPanel.add(remoteLogoutLabel);
+			remoteLogoutLabel.setBounds(20, 55, 100, 20);
+
+			//---- remoteLogoutBox ----
+			remoteLogoutBox.setBackground(Color.white);
+			remoteLogoutBox.setModel(new DefaultComboBoxModel(new String[] {
+				"No",
+				"Yes"
+			}));
+			logoutPanel.add(remoteLogoutBox);
+			remoteLogoutBox.setBounds(135, 55, 150, 20);
+
+			//---- playerLabel ----
+			playerLabel.setText("Player: ");
+			playerLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			playerLabel.setForeground(Color.white);
+			logoutPanel.add(playerLabel);
+			playerLabel.setBounds(20, 85, 100, 20);
+
+			//---- playerNameTextField ----
+			playerNameTextField.setBackground(Color.white);
+			playerNameTextField.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			playerNameTextField.setValue("Name Here");
+			playerNameTextField.setEnabled(true);			
+			logoutPanel.add(playerNameTextField);
+			playerNameTextField.setBounds(135, 85, 90, 20);
+
+			//---- textLabel ----
+			textLabel.setText("Says: ");
+			textLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			textLabel.setForeground(Color.white);
+			logoutPanel.add(textLabel);
+			textLabel.setBounds(20, 115, 100, 20);
+
+			//---- textTextField ----
+			textTextField.setBackground(Color.white);
+			textTextField.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			textTextField.setValue("Text Here");
+			textTextField.setEnabled(true);			
+			logoutPanel.add(textTextField);
+			textTextField.setBounds(135, 115, 200, 20);
+
+			//---- welcomeScreenLabel ----
+			welcomeScreenLabel.setText("Log out To:");
+			welcomeScreenLabel.setFont(new Font("Chalkduster", Font.PLAIN, 12));
+			welcomeScreenLabel.setForeground(Color.white);
+			logoutPanel.add(welcomeScreenLabel);
+			welcomeScreenLabel.setBounds(20, 145, 100, 20);
+
+			//---- welcomeScreenLogoutBox ----
+			welcomeScreenLogoutBox.setBackground(Color.white);
+			welcomeScreenLogoutBox.setModel(new DefaultComboBoxModel(new String[] {
+				"Login Screen",
+				"Welcome Screen"
+			}));
+			logoutPanel.add(welcomeScreenLogoutBox);
+			welcomeScreenLogoutBox.setBounds(135, 145, 150, 20);
+
+
+
+
+
+			//About Panel
+			//---- updateLabel ----
+			if(updateAvail){
+				updateLabel.setText("Update Available");
+				updateLabel.setForeground(Color.red);
+			}else{
+				updateLabel.setText("Cannonball Smelter is up-to-date");
+				updateLabel.setForeground(Color.white);
+			}
+			updateLabel.setFont(new Font("Chalkduster", Font.PLAIN, 14));
+			aboutPanel.add(updateLabel);
+			updateLabel.setBounds(40, 25, 350, 100);
+
+
+
+
+			//---- backgroundPicture ----
+			try {
+				backgroundPicture.setIcon(new ImageIcon(GUIpicture));
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
+			backgroundPanel.add(backgroundPicture);
+			backgroundPicture.setBounds(0, 0, 707, 266);
+
+			setSize(707, 288);
+			setLocationRelativeTo(getOwner());
+			// GEN-END:initComponents
+
+
+
+
+
+		}
+
+		private JButton clickStart;
+		private JButton clickExit;
+		private JPanel backgroundPanel;
+		private JTabbedPane panelTabs;
+		private JLabel backgroundPicture;
+		private JPanel generalPanel;
+		private JPanel settingsPanel;
+		private JLabel versionLabel;
+		private JPanel logoutPanel;
+		private JPanel aboutPanel;
+		private JFormattedTextField textTextField;
+		private JLabel textLabel;
+		private JFormattedTextField playerNameTextField;
+		private JLabel playerLabel;
+		private JLabel logoutHeadingLabel;
+		private JComboBox remoteLogoutBox;
+		private JLabel remoteLogoutLabel;
+		private JLabel welcomeScreenLabel;
+		private JComboBox welcomeScreenLogoutBox;
+		private JComboBox locationBox;
+		private JLabel locationLabel;
+		private JLabel locationHeadingLabel;
+		private JLabel codeLabel;
+		private JLabel codeHeadingLabel;
+		private JLabel updateLabel;
+		private JFormattedTextField codeField;
+	}
+}
